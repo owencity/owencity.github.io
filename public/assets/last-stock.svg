@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-labelledby="title description">
+  <title id="title">마지막 재고 한 개와 두 구매 요청</title>
+  <desc id="description">주문 A와 주문 B가 같은 상품의 남은 재고 한 개를 요청한다.</desc>
+  <defs>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M32 0H0V32" fill="none" stroke="#dce5f3" stroke-width="1"/></pattern>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 8 4 0 8Z" fill="#5880be"/></marker>
+  </defs>
+  <rect width="640" height="360" fill="#f0f5ff"/>
+  <rect width="640" height="360" fill="url(#grid)"/>
+  <g font-family="Pretendard, 'Malgun Gothic', sans-serif" text-anchor="middle">
+    <text x="320" y="54" font-size="17" fill="#46628e">두 요청이 같은 재고를 원한다면</text>
+    <g stroke="#b6c9e6" stroke-width="2" fill="#fff">
+      <rect x="56" y="96" width="178" height="65" rx="14"/>
+      <rect x="56" y="206" width="178" height="65" rx="14"/>
+    </g>
+    <g font-size="23" font-weight="700" fill="#25344b">
+      <text x="145" y="137">주문 A</text>
+      <text x="145" y="247">주문 B</text>
+    </g>
+    <g fill="none" stroke="#5880be" stroke-width="3" marker-end="url(#arrow)">
+      <path d="M234 129H280Q305 129 320 155L341 184"/>
+      <path d="M234 239H280Q305 239 320 213L341 188"/>
+    </g>
+    <rect x="366" y="111" width="214" height="150" rx="19" fill="#2563eb"/>
+    <text x="473" y="150" font-size="19" fill="#e4edff">판매 가능 재고</text>
+    <text x="473" y="221" font-size="57" font-weight="800" fill="#fff">1개</text>
+    <text x="320" y="324" font-size="19" font-weight="600" fill="#25344b">누가 먼저 선점할까?</text>
+  </g>
+</svg>

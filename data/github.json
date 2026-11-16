@@ -1,0 +1,461 @@
+{
+  "attemptedAt": "2026-11-16T16:45:54.379Z",
+  "fetchedAt": {
+    "profile": "2026-11-16T16:45:54.379Z",
+    "repositories": "2026-11-16T16:45:54.379Z",
+    "activity": "2026-11-16T16:45:54.379Z"
+  },
+  "errors": [
+    "pinned",
+    "contributions"
+  ],
+  "profile": {
+    "login": "owencity",
+    "name": "김동규",
+    "avatar": "https://avatars.githubusercontent.com/u/151708233?v=4",
+    "bio": "끊임없는 성장을 갈구하는중...",
+    "url": "https://github.com/owencity",
+    "publicRepos": 31
+  },
+  "repositories": [
+    {
+      "name": "jungsan_attack",
+      "fullName": "owencity/jungsan_attack",
+      "description": "정산어택",
+      "url": "https://github.com/owencity/jungsan_attack",
+      "language": "Kotlin",
+      "stars": 0,
+      "updatedAt": "2026-11-16T13:50:00Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "jungsan_app",
+      "fullName": "owencity/jungsan_app",
+      "description": "정산어택 프론트(웹앱)",
+      "url": "https://github.com/owencity/jungsan_app",
+      "language": "Kotlin",
+      "stars": 0,
+      "updatedAt": "2026-11-15T05:12:40Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "profile",
+      "fullName": "owencity/profile",
+      "description": "소개페이지",
+      "url": "https://github.com/owencity/profile",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2026-11-15T05:09:53Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "kdk-commerce",
+      "fullName": "owencity/kdk-commerce",
+      "description": "재고·주문·결제의 정합성과 실패 복구를 다루는 커머스 시스템 설계 및 구축",
+      "url": "https://github.com/owencity/kdk-commerce",
+      "language": "CSS",
+      "stars": 0,
+      "updatedAt": "2026-11-10T16:30:10Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "n8n_kafka_api",
+      "fullName": "owencity/n8n_kafka_api",
+      "description": "github pr 유실방지 topic 카프카 api 개발",
+      "url": "https://github.com/owencity/n8n_kafka_api",
+      "language": "Java",
+      "stars": 0,
+      "updatedAt": "2026-10-03T12:52:46Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "owencity",
+      "fullName": "owencity/owencity",
+      "description": "",
+      "url": "https://github.com/owencity/owencity",
+      "language": "",
+      "stars": 0,
+      "updatedAt": "2026-08-17T08:21:36Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "PostgreSQL_MySQL",
+      "fullName": "owencity/PostgreSQL_MySQL",
+      "description": "PostgreSQL 과 MySQL 성능차이 테스트",
+      "url": "https://github.com/owencity/PostgreSQL_MySQL",
+      "language": "Python",
+      "stars": 0,
+      "updatedAt": "2026-08-13T12:47:43Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "LiveTally",
+      "fullName": "owencity/LiveTally",
+      "description": "투표개인프로젝트",
+      "url": "https://github.com/owencity/LiveTally",
+      "language": "Java",
+      "stars": 0,
+      "updatedAt": "2026-06-28T16:20:54Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "twentyfour_backend",
+      "fullName": "owencity/twentyfour_backend",
+      "description": "",
+      "url": "https://github.com/owencity/twentyfour_backend",
+      "language": "Java",
+      "stars": 0,
+      "updatedAt": "2026-03-17T10:54:59Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "valkyrieFS",
+      "fullName": "owencity/valkyrieFS",
+      "description": "파일검색시스템",
+      "url": "https://github.com/owencity/valkyrieFS",
+      "language": "Python",
+      "stars": 0,
+      "updatedAt": "2026-01-25T07:57:11Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "24hours_web",
+      "fullName": "owencity/24hours_web",
+      "description": "24시간이 모자라 웹 버전",
+      "url": "https://github.com/owencity/24hours_web",
+      "language": "",
+      "stars": 0,
+      "updatedAt": "2026-01-17T13:05:27Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "24hours",
+      "fullName": "owencity/24hours",
+      "description": "24시간이모자라-모바일",
+      "url": "https://github.com/owencity/24hours",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2025-09-14T15:19:41Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "react",
+      "fullName": "owencity/react",
+      "description": "리액트기초",
+      "url": "https://github.com/owencity/react",
+      "language": "CSS",
+      "stars": 0,
+      "updatedAt": "2025-09-09T14:53:11Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "coding-test",
+      "fullName": "owencity/coding-test",
+      "description": "개인적인 샹향 위한 코딩 테스트 모음",
+      "url": "https://github.com/owencity/coding-test",
+      "language": "Java",
+      "stars": 0,
+      "updatedAt": "2025-03-03T14:12:31Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "pappy-backend",
+      "fullName": "owencity/pappy-backend",
+      "description": "개인프로젝트 - pappy! ",
+      "url": "https://github.com/owencity/pappy-backend",
+      "language": "Java",
+      "stars": 0,
+      "updatedAt": "2025-03-02T14:59:38Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "webrtc",
+      "fullName": "owencity/webrtc",
+      "description": "webrtc signaling",
+      "url": "https://github.com/owencity/webrtc",
+      "language": "Java",
+      "stars": 0,
+      "updatedAt": "2025-02-25T16:18:29Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "pappy-frontend",
+      "fullName": "owencity/pappy-frontend",
+      "description": "개인프로젝트 프론트엔드",
+      "url": "https://github.com/owencity/pappy-frontend",
+      "language": "JavaScript",
+      "stars": 0,
+      "updatedAt": "2025-01-19T13:26:40Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "pappy-swagger-ui",
+      "fullName": "owencity/pappy-swagger-ui",
+      "description": "캠페인 기부 후기 웹사이트 swagger-ui API DOCS",
+      "url": "https://github.com/owencity/pappy-swagger-ui",
+      "language": "",
+      "stars": 0,
+      "updatedAt": "2024-12-20T23:29:45Z",
+      "fork": true,
+      "archived": false
+    },
+    {
+      "name": "splitReact",
+      "fullName": "owencity/splitReact",
+      "description": "react is the best",
+      "url": "https://github.com/owencity/splitReact",
+      "language": "JavaScript",
+      "stars": 0,
+      "updatedAt": "2024-12-17T02:28:04Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "whatNestJS",
+      "fullName": "owencity/whatNestJS",
+      "description": "NestJS 란 ?",
+      "url": "https://github.com/owencity/whatNestJS",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2024-12-08T14:16:30Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "WhatJestTest",
+      "fullName": "owencity/WhatJestTest",
+      "description": "Jest는 무엇인가",
+      "url": "https://github.com/owencity/WhatJestTest",
+      "language": "",
+      "stars": 0,
+      "updatedAt": "2024-12-06T14:59:05Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "cleancode-for-js",
+      "fullName": "owencity/cleancode-for-js",
+      "description": "자바스크립트를 위한 클린코드",
+      "url": "https://github.com/owencity/cleancode-for-js",
+      "language": "",
+      "stars": 0,
+      "updatedAt": "2024-11-26T13:56:19Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "whatTypescript",
+      "fullName": "owencity/whatTypescript",
+      "description": "타입스크립트란 ?",
+      "url": "https://github.com/owencity/whatTypescript",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2024-11-20T13:07:42Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "NodeBoard",
+      "fullName": "owencity/NodeBoard",
+      "description": "node,express 기반 board",
+      "url": "https://github.com/owencity/NodeBoard",
+      "language": "JavaScript",
+      "stars": 0,
+      "updatedAt": "2024-11-03T07:34:10Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "JPAstudy",
+      "fullName": "owencity/JPAstudy",
+      "description": "CRUD JPA study ",
+      "url": "https://github.com/owencity/JPAstudy",
+      "language": "Java",
+      "stars": 0,
+      "updatedAt": "2024-10-29T15:53:29Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "Board",
+      "fullName": "owencity/Board",
+      "description": "개인 게시판 프로젝트",
+      "url": "https://github.com/owencity/Board",
+      "language": "Java",
+      "stars": 0,
+      "updatedAt": "2024-10-29T02:26:18Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "WhatTDD",
+      "fullName": "owencity/WhatTDD",
+      "description": "참고도서 - 테스트 주도 개발 시작하기",
+      "url": "https://github.com/owencity/WhatTDD",
+      "language": "Java",
+      "stars": 0,
+      "updatedAt": "2024-10-04T14:57:22Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "SpringWebSocket",
+      "fullName": "owencity/SpringWebSocket",
+      "description": "미니 웹소켓 개인 프로젝트 (Study)",
+      "url": "https://github.com/owencity/SpringWebSocket",
+      "language": "Java",
+      "stars": 0,
+      "updatedAt": "2024-09-04T08:02:17Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "onlyJSwebSoket",
+      "fullName": "owencity/onlyJSwebSoket",
+      "description": "js로만 이루어진 웹소켓",
+      "url": "https://github.com/owencity/onlyJSwebSoket",
+      "language": "JavaScript",
+      "stars": 0,
+      "updatedAt": "2024-07-24T03:11:40Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "application-deploy-advanced",
+      "fullName": "owencity/application-deploy-advanced",
+      "description": "인프런 배포 자동화 강의",
+      "url": "https://github.com/owencity/application-deploy-advanced",
+      "language": "",
+      "stars": 0,
+      "updatedAt": "2024-06-23T00:05:23Z",
+      "fork": true,
+      "archived": false
+    },
+    {
+      "name": "SQL",
+      "fullName": "owencity/SQL",
+      "description": "PostgreSQL 실습을 위한 데이터",
+      "url": "https://github.com/owencity/SQL",
+      "language": "",
+      "stars": 0,
+      "updatedAt": "2023-03-19T12:24:33Z",
+      "fork": true,
+      "archived": false
+    }
+  ],
+  "activity": [
+    {
+      "id": "20177523846",
+      "type": "pr",
+      "title": "docs(privacy): 선택한 영수증의 처리와 보관 안내를 추가한다",
+      "repository": "owencity/profile",
+      "url": "https://github.com/owencity/profile/pull/6",
+      "date": "2026-11-15T12:24:45Z"
+    },
+    {
+      "id": "27202915154",
+      "type": "push",
+      "title": "코드를 업데이트했습니다",
+      "repository": "owencity/jungsan_attack",
+      "url": "https://github.com/owencity/jungsan_attack/commit/2cdd5b955cb86f472a42ccdabd4e5069eb17df18",
+      "date": "2026-11-15T04:25:29Z"
+    },
+    {
+      "id": "20158323398",
+      "type": "pr",
+      "title": "feat: 간단 N빵·영수증 촬영과 여러 장 입력",
+      "repository": "owencity/jungsan_app",
+      "url": "https://github.com/owencity/jungsan_app/pull/14",
+      "date": "2026-11-15T04:25:18Z"
+    },
+    {
+      "id": "20158182093",
+      "type": "pr",
+      "title": "feat(receipt): 영수증 확인 입력과 간단 N빵을 제공한다",
+      "repository": "owencity/jungsan_attack",
+      "url": "https://github.com/owencity/jungsan_attack/pull/60",
+      "date": "2026-11-15T04:21:30Z"
+    },
+    {
+      "id": "20090349136",
+      "type": "pr",
+      "title": "chore(store): 빌드 20 총무 화면 스크린샷 촬영",
+      "repository": "owencity/jungsan_app",
+      "url": "https://github.com/owencity/jungsan_app/pull/13",
+      "date": "2026-11-14T04:51:47Z"
+    },
+    {
+      "id": "26953294412",
+      "type": "push",
+      "title": "코드를 업데이트했습니다",
+      "repository": "owencity/jungsan_attack",
+      "url": "https://github.com/owencity/jungsan_attack/commit/5a6f2428e73bbc55f98a7b3d4b9ae246377e23f6",
+      "date": "2026-11-11T03:28:24Z"
+    },
+    {
+      "id": "26875804026",
+      "type": "push",
+      "title": "코드를 업데이트했습니다",
+      "repository": "owencity/jungsan_attack",
+      "url": "https://github.com/owencity/jungsan_attack/commit/f5f8deceb2b5a3c1caff22f3ea10d08a0c500698",
+      "date": "2026-11-10T17:46:45Z"
+    },
+    {
+      "id": "19684532369",
+      "type": "pr",
+      "title": "fix(settlement): 총 정산인원 설정과 비회원 응답 흐름 통합",
+      "repository": "owencity/profile",
+      "url": "https://github.com/owencity/profile/pull/5",
+      "date": "2026-11-10T16:32:14Z"
+    },
+    {
+      "id": "19684400842",
+      "type": "pr",
+      "title": "docs: README에 개발 배경과 스택·패키지·거래 흐름 추가",
+      "repository": "owencity/kdk-commerce",
+      "url": "https://github.com/owencity/kdk-commerce/pull/3",
+      "date": "2026-11-10T16:30:43Z"
+    },
+    {
+      "id": "19684198167",
+      "type": "pr",
+      "title": "fix(settlement): 총 정산인원 입력과 응답 현황을 분리",
+      "repository": "owencity/jungsan_app",
+      "url": "https://github.com/owencity/jungsan_app/pull/12",
+      "date": "2026-11-10T16:28:31Z"
+    },
+    {
+      "id": "19683827171",
+      "type": "pr",
+      "title": "fix(settlement): 총 정산인원과 차수별 참석 인원을 분리",
+      "repository": "owencity/jungsan_attack",
+      "url": "https://github.com/owencity/jungsan_attack/pull/59",
+      "date": "2026-11-10T16:25:01Z"
+    },
+    {
+      "id": "26829307942",
+      "type": "push",
+      "title": "코드를 업데이트했습니다",
+      "repository": "owencity/kdk-commerce",
+      "url": "https://github.com/owencity/kdk-commerce/commit/95576257bafab5f7e661a894ab4d8ad1983572d1",
+      "date": "2026-11-10T16:16:58Z"
+    }
+  ]
+}
