@@ -1,23 +1,18 @@
 const root = document.documentElement
 const theme = document.querySelector('.theme')
-const themeKey = 'owencity-site-theme'
-const systemTheme = window.matchMedia('(prefers-color-scheme: dark)')
+const themeKey = 'owencity-site-theme-v2'
 
 function setTheme(mode) {
   const dark = mode === 'dark'
   root.dataset.theme = mode
   theme.setAttribute('aria-pressed', String(dark))
+  theme.setAttribute('aria-label', dark ? '라이트 모드로 전환' : '다크 모드로 전환')
   theme.querySelector('span').textContent = dark ? '☀' : '☾'
 }
 
 let savedTheme
 try { savedTheme = localStorage.getItem(themeKey) } catch {}
-const useSystemTheme = () => setTheme(systemTheme.matches ? 'dark' : 'light')
-if (savedTheme === 'dark' || savedTheme === 'light') setTheme(savedTheme)
-else useSystemTheme()
-systemTheme.addEventListener('change', () => {
-  if (!savedTheme) useSystemTheme()
-})
+setTheme(savedTheme === 'dark' ? 'dark' : 'light')
 theme.addEventListener('click', () => {
   const mode = root.dataset.theme === 'dark' ? 'light' : 'dark'
   savedTheme = mode
