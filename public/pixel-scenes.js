@@ -50,6 +50,33 @@
     }
   }
 
+  function pixelLine(ctx, color, x0, y0, x1, y1, size = 1) {
+    let x = Math.round(x0)
+    let y = Math.round(y0)
+    x1 = Math.round(x1)
+    y1 = Math.round(y1)
+    const dx = Math.abs(x1 - x)
+    const dy = -Math.abs(y1 - y)
+    const sx = x < x1 ? 1 : -1
+    const sy = y < y1 ? 1 : -1
+    let error = dx + dy
+    ctx.fillStyle = color
+    while (true) {
+      ctx.fillRect(x, y, size, size)
+      if (x === x1 && y === y1) break
+      const next = error * 2
+      if (next >= dy) { error += dy; x += sx }
+      if (next <= dx) { error += dx; y += sy }
+    }
+  }
+
+  function rock(ctx, x, y, w, h, shade, light) {
+    shape(ctx, shade, [[x - w * .54, y], [x - w * .45, y - h * .66], [x - w * .14, y - h],
+      [x + w * .29, y - h * .84], [x + w * .54, y - h * .38], [x + w * .38, y]], 1)
+    shape(ctx, light, [[x - w * .45, y - h * .55], [x - w * .13, y - h], [x + w * .28, y - h * .83],
+      [x + w * .43, y - h * .49], [x - w * .02, y - h * .47], [x - w * .26, y - h * .35]], 1)
+  }
+
   function disc(ctx, color, x, y, rx, ry = rx, step = 2) {
     ctx.fillStyle = color
     for (let dy = -ry; dy < ry; dy += step) {
@@ -72,11 +99,14 @@
       const top = Math.round(index * bottom / bands.length / 2) * 2
       const end = Math.round((index + 1) * bottom / bands.length / 2) * 2
       box(ctx, bands[index], 0, top, width, end - top)
-      if (index === 0) continue
-      for (let dot = 0; dot < 240; dot += 1) {
-        const offset = Math.floor(rand() * 8) * 2
-        const y = rand() < 0.5 ? top + offset : top - offset
-        box(ctx, bands[y < top ? index : index - 1], Math.floor(rand() * 320) * 2, y, 2, 2)
+    }
+    for (let index = 1; index < bands.length; index += 1) {
+      const top = Math.round(index * bottom / bands.length / 2) * 2
+      for (let x = 0; x < width; x += 4) {
+        const shift = Math.floor(rand() * 4) * 2
+        box(ctx, bands[index], x + (x % 8 ? 2 : 0), top - 2 - shift, 2, 2)
+        box(ctx, bands[index - 1], x + (x % 8 ? 0 : 2), top + shift, 2, 2)
+        if (x % 12 === 0) box(ctx, bands[index], x, top - 10 - shift, 1, 1)
       }
     }
   }
@@ -114,6 +144,18 @@
       const y = top + rand() * (height - top)
       const reach = 4 + 40 * (y - top) / (height - top)
       box(ctx, glints[index % glints.length], rand() * width, y, 2 + rand() * reach, index % 5 === 0 ? 2 : 1)
+    }
+  }
+
+  function reflect(ctx, x, top, span, spread, colors, seed, count = 68) {
+    const rand = random(seed)
+    for (let index = 0; index < count; index += 1) {
+      const depth = rand()
+      const y = top + depth * span
+      const ox = Math.sin(y * .27) * (2 + depth * 5)
+      const drift = (rand() - .5) * spread * (.35 + depth)
+      const reach = (3 + depth * 12) * rand()
+      box(ctx, colors[Math.floor(rand() * colors.length)], x + drift + ox, y, reach + 1, index % 6 ? 1 : 2)
     }
   }
 
@@ -208,22 +250,37 @@
     cloud(ctx, 104, 133, 88, '#9a5b74', '#774d70')
     cloud(ctx, 519, 165, 63, '#ac6b78', '#8d5a78')
     cloud(ctx, 316, 100, 38, '#60456a', '#573c62')
+    buildings(ctx, 212, 207, 30, 80, ['#66516c', '#7f5b73', '#8b6075'], ['#b47886', '#be8393', '#916581'], 1)
     buildings(ctx, 216, 12, 26, 87, ['#393553', '#51415a', '#604760'], ['#b47580', '#d5928d', '#916581'], 0)
     buildings(ctx, 227, 89, 43, 132, ['#24263f', '#2d2b46', '#39314a'], ['#e5a27e', '#ad7484', '#675674', '#f7c294'], 4)
-    water(ctx, 223, ['#46415d', '#3a3855', '#30314e', '#262943', '#20253e'], ['#61506a', '#4f4763', '#443d58', '#7b576c'], 29)
-    const rand = random(800)
-    for (let dot = 0; dot < 155; dot += 1) {
-      const y = 230 + rand() * 130
-      const x = 478 + (rand() - 0.5) * (26 + (y - 221) * 0.80)
-      box(ctx, ['#9b687d', '#8d5a77', '#e29c8d'][dot % 3], x, y, 3 + rand() * 14, 1)
+    for (const [x, y, label, light, edge] of [[101, 171, '24H', '#74e0d1', '#2b6d83'],
+      [346, 150, 'HOTEL', '#f7a7bc', '#8c4c74'], [528, 179, 'CAFE', '#ffb87f', '#88565e']]) {
+      const w = label.length * 6 + 10
+      box(ctx, edge, x - 4, y - 3, w + 8, 22)
+      box(ctx, light, x, y, w, 15)
+      box(ctx, '#292642', x + 1, y + 1, w - 2, 13)
+      pixelText(ctx, label, x + 4, y + 3, light)
     }
+    box(ctx, '#44425e', 252, 110, 2, 109)
+    box(ctx, '#db8492', 253, 105, 3, 2)
+    for (let y = 124; y < 216; y += 13) box(ctx, '#645067', 253, y, 11, 1)
+    water(ctx, 223, ['#474161', '#393957', '#2e3253', '#222a49', '#1b213c'], ['#61506f', '#504768', '#3c405f', '#79546d'], 29)
+    reflect(ctx, 477, 224, 120, 115, ['#9a627c', '#b87383', '#e39a8e'], 800, 144)
+    reflect(ctx, 115, 233, 96, 45, ['#326576', '#45868f', '#65aeba'], 802)
+    reflect(ctx, 360, 231, 86, 52, ['#68496d', '#a35483', '#b7769a'], 805)
+    reflect(ctx, 543, 235, 95, 60, ['#785165', '#ba786e', '#cf9681'], 806)
     box(ctx, '#171d35', 0, 227, 640, 11)
     box(ctx, '#98697d', 0, 227, 640, 2)
     box(ctx, '#23253e', 0, 239, 640, 4)
+    for (let x = 0; x < width; x += 28) {
+      pixelLine(ctx, '#49425e', x, 230, x + 13, 241, 2)
+      pixelLine(ctx, '#56465e', x + 13, 240, x + 27, 230, 1)
+    }
     for (const x of [71, 232, 399, 566]) {
       box(ctx, '#22253d', x, 240, 12, 37)
       box(ctx, '#42405a', x + 10, 243, 3, 27)
       box(ctx, '#252841', x - 4, 274, 22, 5)
+      for (let y = 248; y < 274; y += 6) box(ctx, '#302e48', x + 1, y, 7, 1)
     }
     for (let x = 7; x < width; x += 21) {
       box(ctx, '#28263f', x, 223, 2, 6)
@@ -235,6 +292,12 @@
     railcar(ctx, x, 208, [51, 51, 51], '#a67581', '#6f4d6e', '#ffc88f')
     box(ctx, '#ffe7ac', x + 157, 215, 2, 2)
     box(ctx, '#f47280', x + 1, 216, 2, 2)
+    box(ctx, '#161b30', 0, 339, 640, 6)
+    box(ctx, '#665064', 0, 338, 640, 2)
+    for (const post of [24, 152, 282, 412, 542]) {
+      box(ctx, '#161b30', post, 327, 6, 33)
+      box(ctx, '#8b5c70', post, 326, 7, 2)
+    }
   })
 
   const lake = scene('forest-lake', '호수 위 보트', '#89d3ba', (ctx) => {
@@ -244,6 +307,10 @@
     const ridge = [[0, 151], [56, 113], [94, 128], [163, 83], [213, 137], [303, 94], [352, 63],
       [417, 126], [459, 93], [530, 135], [597, 111], [640, 136], [640, 209], [0, 209]]
     shape(ctx, '#80aab3', ridge)
+    shape(ctx, '#6b9bac', [[56, 113], [93, 127], [145, 178], [105, 160], [83, 143]])
+    shape(ctx, '#789eb0', [[163, 83], [213, 137], [225, 176], [192, 155], [179, 122]])
+    shape(ctx, '#648e9f', [[352, 63], [417, 126], [424, 148], [383, 129], [367, 88]])
+    shape(ctx, '#759eac', [[459, 93], [530, 135], [550, 169], [512, 148], [476, 124]])
     shape(ctx, '#d9e9df', [[127, 108], [163, 83], [190, 113], [170, 106], [163, 115], [154, 103]])
     shape(ctx, '#e4eee2', [[317, 89], [352, 63], [390, 103], [359, 93], [351, 108], [339, 87]])
     shape(ctx, '#628f91', [[0, 132], [86, 160], [148, 191], [222, 155], [284, 176], [361, 154], [418, 127],
@@ -256,12 +323,30 @@
       pine(ctx, x, shore, 10 + rand() * 35, '#3b7067', '#568276')
     }
     water(ctx, 205, ['#82b9b3', '#74b1ab', '#5fa6a3', '#559e9d', '#489294'], ['#a0cebf', '#6bc1b0', '#548e8e', '#b0dbce'], 43)
+    for (const [x, span, spread] of [[86, 46, 124], [231, 21, 65], [436, 37, 134], [592, 55, 94]]) {
+      reflect(ctx, x, 207, span, spread, ['#639d91', '#72aa9e', '#588e90'], x + 919, 86)
+    }
+    for (const [x, y, w] of [[110, 207, 94], [209, 213, 110], [380, 206, 103], [537, 206, 68]]) {
+      box(ctx, '#c5e1d3', x, y, w, 1)
+      box(ctx, '#9bcbbb', x + 15, y + 3, w * .62, 1)
+    }
     shape(ctx, '#326e65', [[0, 265], [56, 277], [111, 307], [138, 360], [0, 360]])
     shape(ctx, '#497d6b', [[0, 277], [50, 287], [118, 330], [132, 360], [0, 360]])
     for (let x = 2; x < 91; x += 14) pine(ctx, x, 288 + x * 0.62, 34 + rand() * 52, '#24574f', '#3d7160', '#524b44')
     for (let index = 0; index < 46; index += 1) {
       const x = rand() * 106
       box(ctx, index % 3 === 0 ? '#d3c98e' : '#65927a', x, 313 + rand() * 42, 2 + rand() * 6, 2)
+    }
+    for (const [x, y, w, h] of [[126, 329, 41, 16], [99, 313, 32, 13], [64, 304, 26, 12], [16, 309, 39, 19], [595, 359, 65, 21], [635, 345, 62, 31]]) {
+      rock(ctx, x, y, w, h, '#3d6d70', '#79a28d')
+      box(ctx, '#8cc5b4', x + w * .3, y + 2, w * .48, 1)
+    }
+    for (let reed = 0; reed < 27; reed += 1) {
+      const x = reed < 13 ? 80 + rand() * 56 : 556 + rand() * 77
+      const y = reed < 13 ? 319 + rand() * 40 : 345 + rand() * 15
+      const top = 9 + rand() * 26
+      pixelLine(ctx, '#376b61', x, y, x - 6 + reed % 10, y - top)
+      if (reed % 3 === 0) box(ctx, '#9d9464', x - 7 + reed % 10, y - top - 3, 3, 5)
     }
   }, (ctx, time) => {
     sparkleWater(ctx, time, 218, 138, '#b7dfd1', lakeRipples)
@@ -272,9 +357,12 @@
     }
     shape(ctx, '#724b43', [[x - 26, y], [x + 38, y], [x + 27, y + 10], [x - 16, y + 10]])
     box(ctx, '#d79c6c', x - 22, y + 2, 56, 3)
+    box(ctx, '#f6c592', x - 19, y + 1, 51, 1)
+    box(ctx, '#a37157', x - 11, y + 6, 36, 1)
     box(ctx, '#755d4f', x + 4, y - 44, 2, 48)
     shape(ctx, '#f4e6bf', [[x + 2, y - 43], [x + 2, y - 4], [x - 22, y - 4]])
     shape(ctx, '#eee1ac', [[x + 7, y - 37], [x + 30, y - 7], [x + 7, y - 7]])
+    pixelLine(ctx, '#ffedd0', x + 1, y - 35, x - 19, y - 5)
     box(ctx, '#b77363', x + 6, y - 44, 12 + Math.sin(time * 4) * 2, 4)
   })
 
@@ -284,11 +372,19 @@
     cloud(ctx, 65, 76, 55, '#cf8791', '#9e6c89')
     cloud(ctx, 498, 126, 100, '#eda68d', '#d7888c')
     water(ctx, 197, ['#d8918d', '#bd8392', '#9c778c', '#876c87', '#6c6283'], ['#eaa991', '#ba8a9c', '#a2778c', '#e6a288'], 77)
+    reflect(ctx, 166, 197, 151, 116, ['#edaa8e', '#ffc493', '#f4b69a', '#cb8f8e'], 178, 152)
     shape(ctx, '#746382', [[0, 200], [30, 182], [52, 188], [70, 179], [90, 203], [108, 215], [0, 215]])
+    shape(ctx, '#8d6e84', [[0, 200], [30, 182], [52, 188], [66, 181], [48, 197], [0, 205]])
+    shape(ctx, '#a4808f', [[11, 214], [43, 208], [92, 210], [80, 214], [33, 218]])
     shape(ctx, '#815e78', [[298, 200], [356, 180], [386, 183], [427, 160], [473, 157], [511, 111], [548, 100],
       [582, 69], [640, 67], [640, 360], [185, 360], [223, 298], [253, 264]])
     shape(ctx, '#a46f79', [[640, 107], [609, 110], [590, 133], [556, 146], [522, 172], [486, 190], [516, 233],
       [553, 255], [594, 360], [640, 360]])
+    shape(ctx, '#c18180', [[640, 112], [607, 116], [589, 136], [554, 149], [524, 177], [491, 193],
+      [517, 190], [563, 170], [595, 147], [640, 139]])
+    shape(ctx, '#81576f', [[640, 151], [580, 177], [550, 185], [511, 205], [523, 214], [567, 208], [595, 187], [640, 183]])
+    shape(ctx, '#ba7d81', [[640, 194], [597, 203], [578, 223], [542, 235], [553, 246], [584, 238], [616, 218], [640, 222]])
+    shape(ctx, '#714c67', [[641, 237], [608, 247], [587, 276], [578, 297], [598, 311], [620, 291], [640, 292]])
     shape(ctx, '#a97c80', [[183, 360], [234, 286], [301, 257], [382, 231], [432, 212], [468, 188], [496, 187],
       [498, 200], [460, 229], [417, 251], [357, 284], [335, 311], [315, 360]])
     shape(ctx, '#494254', [[207, 360], [241, 308], [275, 285], [357, 253], [413, 234], [460, 208], [477, 191],
@@ -302,6 +398,13 @@
       box(ctx, '#684b62', x, y, 3, size)
       box(ctx, '#ffe2ae', x - 1, y + 1, 4, 2)
     }
+    for (const [x, y, size] of [[331, 313, 51], [411, 257, 34], [469, 221, 22]]) {
+      const pale = size > 30 ? '#ffce9a' : '#fed6ad'
+      box(ctx, '#63465b', x, y - size, 3, size)
+      box(ctx, '#9c6d74', x, y - size, 1, size)
+      box(ctx, '#76506b', x - size * .20, y - size, size * .20 + 2, 2)
+      box(ctx, pale, x - size * .20, y - size + 1, 6, 2)
+    }
     const rand = random(614)
     for (let index = 0; index < 100; index += 1) {
       const x = 503 + rand() * 137
@@ -313,6 +416,9 @@
       shape(ctx, '#523c53', [[x - 3, y], [x + 2, y - size], [x + 6, y - size], [x + 1, y]])
       shape(ctx, '#62475e', [[x + 4, y - size], [x + 14, y - size - 12], [x + 25, y - size - 9], [x + 12, y - size - 5],
         [x + 4, y - size], [x - 15, y - size - 5], [x - 24, y - size + 2], [x - 11, y - size - 8]])
+    }
+    for (const [x, y, w, h] of [[583, 357, 62, 20], [548, 331, 54, 24], [640, 339, 78, 32], [527, 321, 34, 17], [163, 360, 83, 34]]) {
+      rock(ctx, x, y, w, h, '#6f4e65', '#b87f7e')
     }
   }, (ctx, time) => {
     for (let line = 0; line < 11; line += 1) {
@@ -330,6 +436,9 @@
     box(ctx, '#754b65', x - size * 0.29, y - size * 0.28, size * 0.53, size * 0.14)
     box(ctx, '#ffba91', x - size * 0.52, y + 1, size * 0.18, 2)
     box(ctx, '#ffba91', x + size * 0.34, y + 1, size * 0.18, 2)
+    box(ctx, '#e18579', x - size * .32, y + 2, size * .62, 1)
+    gull(ctx, 215 + time * 7, 110 + Math.sin(time * 1.3) * 4, time, '#695577')
+    gull(ctx, 247 + time * 5, 126 + Math.sin(time + 2) * 5, time + .5, '#786080')
   })
 
   const rain = scene('rainy-alley', '비 오는 골목', '#9b9bdc', (ctx) => {
@@ -342,6 +451,18 @@
     shape(ctx, '#34304b', [[0, 52], [162, 116], [162, 262], [0, 324]])
     shape(ctx, '#292b47', [[640, 19], [450, 91], [404, 129], [404, 238], [640, 329]])
     shape(ctx, '#36324e', [[640, 63], [479, 106], [445, 135], [445, 256], [640, 325]])
+    for (const [x, y, w, h] of [[24, 89, 28, 31], [75, 104, 25, 26], [129, 115, 20, 24],
+      [477, 124, 21, 22], [556, 96, 30, 28], [610, 78, 30, 42]]) {
+      box(ctx, '#242237', x - 2, y - 2, w + 4, h + 4)
+      box(ctx, '#58475f', x, y, w, h)
+      box(ctx, '#79627a', x + 2, y + h * .42, w - 4, 1)
+      box(ctx, '#343049', x + w * .51, y, 2, h)
+      box(ctx, '#75617d', x - 3, y + h + 1, w + 6, 2)
+    }
+    pixelLine(ctx, '#474059', 88, 92, 321, 118)
+    pixelLine(ctx, '#474059', 321, 118, 540, 84)
+    pixelLine(ctx, '#514462', 164, 119, 337, 149)
+    pixelLine(ctx, '#514462', 337, 149, 491, 122)
     shape(ctx, '#665067', [[5, 159], [180, 173], [180, 197], [5, 191]])
     shape(ctx, '#ca888c', [[9, 171], [176, 178], [176, 184], [9, 182]])
     box(ctx, '#25233b', 26, 194, 127, 72)
@@ -349,6 +470,11 @@
     box(ctx, '#e5a281', 42, 201, 95, 52)
     for (const x of [65, 89, 113]) box(ctx, '#734d66', x, 197, 4, 63)
     box(ctx, '#734d66', 42, 223, 95, 3)
+    for (const x of [46, 72, 94, 120]) {
+      box(ctx, '#ffca94', x, 203, 12, 3)
+      box(ctx, '#bd786e', x, 245, 13, 4)
+      box(ctx, '#f1ad81', x + 1, 237, 4, 8)
+    }
     box(ctx, '#805369', 53, 133, 84, 31)
     box(ctx, '#f2b194', 57, 137, 76, 23)
     pixelText(ctx, 'RAMEN', 78, 145, '#61445b')
@@ -357,6 +483,10 @@
     box(ctx, '#8bc2b4', 512, 196, 86, 60)
     for (const x of [534, 556, 578]) box(ctx, '#5a7884', x, 193, 4, 66)
     box(ctx, '#5a7884', 512, 220, 86, 4)
+    for (let x = 521; x < 597; x += 11) {
+      disc(ctx, '#5a6a81', x, 241 + x % 4, 3, 3, 1)
+      box(ctx, '#aed8bd', x - 4, 204, 8, 2)
+    }
     box(ctx, '#79b0a9', 527, 139, 88, 24)
     box(ctx, '#41677a', 532, 142, 78, 18)
     pixelText(ctx, 'RECORDS', 550, 147, '#afdfcb')
@@ -365,6 +495,8 @@
       box(ctx, '#a47d9b', x + 3, y + 4, 9, 19)
     }
     const rand = random(7)
+    reflect(ctx, 99, 267, 93, 130, ['#976381', '#bb7b8a', '#d99590'], 710, 96)
+    reflect(ctx, 545, 266, 94, 137, ['#527f88', '#6a9f9f', '#99b4a9'], 720, 99)
     for (let index = 0; index < 150; index += 1) {
       const y = 250 + rand() * 110
       const x = rand() * width
@@ -373,6 +505,11 @@
     }
     for (const [x, y] of [[252, 233], [392, 235], [236, 253], [414, 261], [214, 285], [448, 293], [174, 324], [484, 333]]) {
       box(ctx, '#c4a0a7', x, y, 15, 2)
+    }
+    for (const [x, y, w] of [[255, 263, 36], [325, 309, 73], [438, 328, 57]]) {
+      disc(ctx, '#55435f', x, y, w, 5, 1)
+      box(ctx, '#a68195', x - w * .5, y - 1, w * .63, 1)
+      box(ctx, '#81667e', x + 3, y + 1, w * .67, 1)
     }
   }, (ctx, time) => {
     const x = 323 + time * 2.9
@@ -406,11 +543,17 @@
       [471, 121], [528, 90], [640, 144], [640, 244], [0, 244]])
     shape(ctx, '#718e74', [[0, 153], [64, 129], [135, 157], [191, 198], [251, 182], [316, 150], [389, 169],
       [457, 194], [520, 145], [583, 129], [640, 164], [640, 255], [0, 255]])
+    shape(ctx, '#8da37b', [[65, 131], [137, 159], [211, 197], [179, 192], [119, 167], [92, 160]])
+    shape(ctx, '#899e76', [[316, 152], [390, 171], [460, 192], [427, 195], [365, 175], [337, 174]])
     const rand = random(152)
     for (let x = -5; x < 660; x += 8 + rand() * 13) {
       const y = 223 + rand() * 12
       const size = 25 + rand() * 63
       pine(ctx, x, y, size, '#4c735c', '#668967', '#5a6253')
+    }
+    for (let x = -3; x < 643; x += 15 + rand() * 11) {
+      const y = 230 + rand() * 8
+      pine(ctx, x, y, 16 + rand() * 40, '#3c624f', '#537454', '#635e4e')
     }
     shape(ctx, '#8a9869', [[0, 216], [105, 227], [214, 215], [349, 224], [465, 210], [640, 216], [640, 360], [0, 360]])
     shape(ctx, '#728b63', [[0, 278], [119, 265], [306, 277], [442, 248], [640, 266], [640, 360], [0, 360]])
@@ -424,6 +567,15 @@
     }
     box(ctx, '#d0b683', 0, 249, width, 2)
     box(ctx, '#b29775', 0, 257, width, 2)
+    for (let stone = 0; stone < 154; stone += 1) {
+      const y = 246 + Math.floor(rand() * 22)
+      if (y === 249 || y === 250 || y === 257 || y === 258) continue
+      box(ctx, ['#836b56', '#a0896a', '#504c48'][stone % 3], rand() * width, y, 1 + rand() * 5, 1)
+    }
+    box(ctx, '#766859', 435, 217, 3, 31)
+    box(ctx, '#313a3e', 432, 215, 9, 13)
+    box(ctx, '#de9c65', 434, 218, 3, 3)
+    box(ctx, '#875a57', 434, 223, 3, 2)
     for (const [x, y, size] of [[24, 337, 157], [79, 366, 124], [152, 359, 86], [531, 374, 96], [592, 366, 142], [646, 340, 164]]) {
       pine(ctx, x, y, size, '#2c524c', '#3f6a51', '#4d4c46')
     }
@@ -432,6 +584,9 @@
       const y = 300 + rand() * 60
       box(ctx, '#b3a36c', x, y, 2, 3)
       box(ctx, '#e9d993', x, y, 2, 1)
+    }
+    for (const [x, y, w, h] of [[198, 357, 72, 22], [252, 338, 37, 16], [486, 359, 70, 30]]) {
+      rock(ctx, x, y, w, h, '#4e6453', '#82906a')
     }
   }, (ctx, time) => {
     const x = 185 + time * 24
@@ -453,16 +608,25 @@
     const w = size
     const h = Math.round(size * 0.53)
     box(ctx, wall, x, y - h, w, h)
+    for (let row = 7; row < h; row += 6) {
+      box(ctx, roof, x + 2, y - row, w - 4, 1)
+    }
+    box(ctx, '#796779', x + w - 4, y - h + 2, 3, h - 2)
     box(ctx, '#5b536a', x + w * 0.73, y - h - size * 0.33, size * 0.11, size * 0.41)
     box(ctx, '#d4d9ed', x + w * 0.72, y - h - size * 0.33, size * 0.13, 3)
     const peak = y - h - size * 0.36
     shape(ctx, roof, [[x - 8, y - h + 4], [x + w * 0.36, peak], [x + w + 7, y - h + 4]])
     shape(ctx, '#e9edf1', [[x - 9, y - h], [x + w * 0.36, peak - 4], [x + w + 8, y - h],
       [x + w, y - h + 1], [x + w * 0.36, peak + 6], [x, y - h + 4]])
+    pixelLine(ctx, '#f8f1f5', x - 8, y - h, x + w * .36, peak - 4)
+    pixelLine(ctx, '#c6c8de', x + w * .39, peak + 4, x + w + 4, y - h + 1)
     box(ctx, roof, x + w * 0.51, y - h * 0.57, w * 0.17, h * 0.57)
     for (const left of [x + w * 0.13, x + w * 0.74]) {
+      box(ctx, roof, left - 2, y - h * .69 - 2, w * .14 + 4, h * .31 + 5)
       box(ctx, window, left, y - h * 0.69, w * 0.14, h * 0.31)
       box(ctx, wall, left + w * 0.06, y - h * 0.69, 2, h * 0.31)
+      box(ctx, '#ffe3ae', left + 1, y - h * .66, w * .1, 2)
+      box(ctx, '#d2cadf', left - 2, y - h * .36, w * .14 + 5, 2)
     }
     box(ctx, '#c5c9e2', x - 4, y - 2, w + 11, 3)
   }
@@ -483,10 +647,23 @@
     shape(ctx, '#dce0ed', [[0, 318], [150, 296], [266, 306], [408, 288], [531, 296], [640, 286], [640, 360], [0, 360]])
     shape(ctx, '#aaafcf', [[336, 258], [343, 258], [380, 272], [388, 296], [365, 324], [369, 360], [321, 360],
       [328, 334], [352, 305], [370, 290], [365, 277]])
+    shape(ctx, '#e7d2cb', [[348, 250], [359, 248], [378, 268], [400, 275], [382, 281], [354, 276]])
+    shape(ctx, '#e1d3d9', [[278, 256], [294, 253], [323, 266], [333, 273], [293, 269]])
     cabin(ctx, 89, 261, 59, '#a57e88', '#716679', '#fbd6a7')
     cabin(ctx, 268, 255, 111, '#9c707b', '#60566c', '#ffce96')
     cabin(ctx, 475, 246, 63, '#8c7387', '#615972', '#f5cca2')
     cabin(ctx, 405, 221, 32, '#8b8299', '#6e697f', '#efcea4')
+    for (let post = 0; post < 8; post += 1) {
+      const x = 162 + post * 10
+      const y = 272 - post * 1.6
+      box(ctx, '#7c738a', x, y - 9, 3, 11)
+      box(ctx, '#ebe9f2', x - 1, y - 10, 4, 2)
+      pixelLine(ctx, '#a293a2', x, y - 5, x + 10, y - 7)
+    }
+    for (const [x, y] of [[354, 273], [361, 282], [371, 290], [361, 299], [356, 309], [346, 321], [341, 335]]) {
+      disc(ctx, '#8f9fc1', x, y, 4, 2, 1)
+      box(ctx, '#e9e9f1', x - 2, y + 1, 4, 1)
+    }
     for (const [x, y, size] of [[20, 339, 118], [80, 351, 82], [217, 298, 59], [556, 335, 101], [614, 345, 134]]) {
       pine(ctx, x, y, size, '#536982', '#a1b4cb', '#776b83')
     }
@@ -518,6 +695,13 @@
     disc(ctx, '#d1c5de', 409, 120, 17, 11)
     disc(ctx, '#d1c5de', 376, 128, 10, 9)
     disc(ctx, '#dbcee2', 416, 76, 10, 8)
+    const crater = random(205)
+    for (let grain = 0; grain < 186; grain += 1) {
+      const ox = crater() * 78 - 39
+      const oy = crater() * 82 - 41
+      if (ox ** 2 + oy ** 2 > 1880) continue
+      box(ctx, ['#d5c8df', '#f0e1eb', '#ded0e3'][grain % 3], 387 + ox, 97 + oy, grain % 4 ? 1 : 2, 1)
+    }
     cloud(ctx, 381, 148, 105, '#64546e', '#4d4465')
     cloud(ctx, 128, 126, 85, '#453d60', '#393652')
     buildings(ctx, 252, 91, 15, 95, ['#292740', '#36334f', '#413751'], ['#6e586f', '#ac767a', '#b68a91'], 2)
@@ -530,6 +714,10 @@
     box(ctx, '#353148', 39, 246, 58, 43)
     box(ctx, '#51425f', 34, 241, 65, 7)
     for (let y = 252; y < 275; y += 5) box(ctx, '#22253e', 45, y, 44, 2)
+    box(ctx, '#807087', 35, 241, 58, 1)
+    pixelLine(ctx, '#4d465f', 82, 285, 194, 273, 2)
+    pixelLine(ctx, '#322f4a', 192, 273, 192, 231, 2)
+    box(ctx, '#746b80', 189, 229, 10, 3)
     box(ctx, '#302e48', 535, 239, 10, 43)
     box(ctx, '#66536f', 531, 235, 18, 5)
     box(ctx, '#292941', 118, 205, 3, 62)
@@ -538,6 +726,10 @@
     for (let x = 106; x < 138; x += 7) box(ctx, '#4c4b67', x, 203, 1, 14)
     for (let line = 0; line < 8; line += 1) {
       box(ctx, '#25263d', 271 + line * 8, 305 + line * 5, 270 - line * 12, 1)
+    }
+    for (const [x, y, w] of [[479, 296, 18], [305, 297, 16], [575, 308, 31], [399, 325, 23], [536, 342, 40]]) {
+      box(ctx, '#34374e', x, y, w, 1)
+      box(ctx, '#30334a', x + 4, y + 2, w * .72, 1)
     }
   }, (ctx, time) => {
     const x = 331
@@ -551,6 +743,8 @@
     shape(ctx, '#171a2c', [[x + 8, y + 1], [x + 16, y], [x + 22, y - 5], [x + 24, y - 12 + tail], [x + 27, y - 12 + tail],
       [x + 26, y - 3], [x + 19, y + 4], [x + 9, y + 4]], 1)
     box(ctx, '#b7a8c5', x - 11, y - 17, 2, 1)
+    pixelLine(ctx, '#79708a', x - 12, y - 24, x - 9, y - 21)
+    pixelLine(ctx, '#595670', x - 5, y - 15, x + 2, y - 11)
     if (Math.floor(time * 2) % 4 < 2) box(ctx, '#ce7e9b', 119, 202, 2, 2)
   })
 
@@ -560,12 +754,18 @@
       [x - size * 0.20, y - size * 0.79], [x - 1, y - size * 0.66], [x + size * 0.12, y - size * 0.88],
       [x + size * 0.15, y - size * 0.87], [x + 5, y - size * 0.49], [x + size * 0.35, y - size * 0.68],
       [x + size * 0.38, y - size * 0.67], [x + 5, y - size * 0.41], [x + 8, y]])
+    pixelLine(ctx, '#ac7784', x - 4, y - 3, x - size * .021, y - size * .55)
+    pixelLine(ctx, '#93637b', x - 3, y - size * .47, x + size * .29, y - size * .67)
     for (let cluster = 0; cluster < 39; cluster += 1) {
       const px = x + (rand() - 0.5) * size * 1.14
       const py = y - size * (0.59 + rand() * 0.34) - 0.23 * (size * 0.45 - Math.abs(x - px))
       const radius = size * (0.065 + rand() * 0.14)
       disc(ctx, ['#ba6e8f', '#cd809e', '#e292ad', '#efa6b7', '#ec9cb3'][cluster % 5], px, py, radius, radius * 0.56)
       disc(ctx, ['#f5b5c7', '#f1a5bb', '#f7c3cf'][cluster % 3], px - 3, py - radius * 0.3, radius * 0.71, radius * 0.24)
+      if (cluster % 4 === 0) {
+        box(ctx, '#ffe0e2', px - radius * .43, py - radius * .23, 4, 1)
+        box(ctx, '#f8cddb', px - radius * .41 + 2, py - radius * .24 - 1, 2, 4)
+      }
     }
     for (let detail = 0; detail < 54; detail += 1) {
       const px = x + (rand() - 0.5) * size * 1.18
@@ -585,9 +785,13 @@
       disc(ctx, ['#a88fae', '#c192b0', '#d4a4ba'][Math.floor(rand() * 3)], x, 188 - rand() * 13, 14, 6)
     }
     water(ctx, 196, ['#9aadc1', '#8da9bf', '#85a2bb', '#7995b3', '#7189aa'], ['#b4bfd0', '#b0a9c3', '#7897b3', '#deb2c5'], 29)
+    reflect(ctx, 91, 205, 72, 101, ['#c69eb9', '#bba7c1', '#d1afc0'], 39)
+    reflect(ctx, 571, 208, 88, 134, ['#b9a2bc', '#c09ab5', '#ddbac8'], 40)
+    box(ctx, '#b4bacb', 218, 201, 120, 1)
     for (const x of [401, 479, 551, 621]) {
       box(ctx, '#927f96', x, 198, 7, 20)
       box(ctx, '#a599aa', x + 5, 198, 3, 15)
+      box(ctx, '#c2aabd', x - 3, 213, 14, 2)
     }
     box(ctx, '#8e8199', 374, 193, 267, 6)
     box(ctx, '#e2bec7', 374, 191, 267, 2)
@@ -597,6 +801,15 @@
     shape(ctx, '#bd9faa', [[0, 291], [117, 280], [218, 300], [344, 324], [484, 319], [640, 298], [640, 360], [0, 360]])
     shape(ctx, '#d3b8bd', [[0, 310], [112, 295], [217, 317], [345, 341], [490, 337], [640, 316], [640, 342], [485, 360],
       [345, 360], [216, 340], [108, 318], [0, 331]])
+    for (const [x, y, w] of [[16, 315, 44], [124, 310, 31], [197, 322, 54], [298, 343, 42], [386, 352, 30], [490, 344, 55], [577, 336, 32]]) {
+      pixelLine(ctx, '#b392a5', x, y, x + w, y + 2)
+      box(ctx, '#e5c5c9', x + 3, y + 4, w * .72, 1)
+    }
+    for (const [x, y] of [[134, 277], [179, 286], [228, 298], [270, 306]]) {
+      box(ctx, '#8b788b', x, y - 12, 3, 14)
+      box(ctx, '#c6a8ba', x - 1, y - 12, 5, 2)
+    }
+    pixelLine(ctx, '#857184', 134, 266, 271, 295, 2)
     blossom(ctx, 89, 306, 238, 609)
     blossom(ctx, 585, 309, 208, 930)
     blossom(ctx, 173, 293, 113, 59)
@@ -621,11 +834,18 @@
       const y = 233 - x * 0.31 + (rand() - 0.5) * (36 + rand() * 74)
       box(ctx, ['#3e3b64', '#535079', '#63587e', '#77709a', '#343a63'][index % 5], x, y, index % 9 === 0 ? 2 : 1, 1)
     }
+    for (let index = 0; index < 410; index += 1) {
+      const x = rand() * width
+      const y = 228 - x * .30 + Math.sin(x / 37) * 6 + (rand() - .5) * 26
+      box(ctx, ['#44466f', '#6f6289', '#84729c', '#5f5780'][index % 4], x, y, 1, 1)
+    }
     stars(ctx, 16, 220, 224, ['#8b8fb4', '#aaaacc', '#d7c8e4', '#e5d6e8'])
     shape(ctx, '#343550', [[0, 235], [69, 201], [121, 215], [165, 179], [236, 217], [305, 194], [360, 208],
       [412, 155], [473, 186], [505, 177], [567, 213], [640, 207], [640, 360], [0, 360]])
     shape(ctx, '#252e48', [[0, 248], [100, 224], [192, 256], [256, 240], [340, 259], [423, 213], [480, 241], [640, 211],
       [640, 360], [0, 360]])
+    shape(ctx, '#303653', [[423, 214], [479, 241], [552, 235], [518, 248], [462, 250], [436, 232]])
+    shape(ctx, '#41405d', [[165, 180], [237, 217], [213, 219], [183, 203], [165, 194]])
     shape(ctx, '#23273e', [[0, 299], [86, 289], [189, 275], [236, 261], [354, 258], [421, 267], [524, 289], [640, 281],
       [640, 360], [0, 360]])
     shape(ctx, '#3b3b52', [[0, 337], [93, 319], [153, 321], [230, 302], [276, 311], [361, 283], [448, 298], [569, 315],
@@ -641,6 +861,14 @@
       [365, 212], [361, 191], [349, 169]])
     shape(ctx, '#4d4e70', [[307, 153], [319, 150], [331, 169], [339, 193], [341, 213], [326, 213], [321, 184]])
     shape(ctx, '#d4bcc9', [[307, 156], [318, 153], [331, 177], [329, 181], [319, 161], [309, 163]])
+    pixelLine(ctx, '#8b87a6', 288, 175, 280, 190, 1)
+    pixelLine(ctx, '#8b87a6', 280, 190, 275, 209, 1)
+    pixelLine(ctx, '#d3bfd0', 294, 173, 308, 164)
+    pixelLine(ctx, '#c1afc3', 285, 184, 302, 174)
+    pixelLine(ctx, '#9a94af', 276, 203, 325, 192)
+    pixelLine(ctx, '#8984a2', 341, 192, 370, 195)
+    pixelLine(ctx, '#585876', 277, 226, 364, 226)
+    pixelLine(ctx, '#89839a', 270, 218, 270, 274, 2)
     box(ctx, '#6c6886', 264, 211, 129, 5)
     box(ctx, '#31364f', 314, 236, 23, 42)
     box(ctx, '#bea481', 321, 244, 6, 8)
@@ -650,7 +878,11 @@
     box(ctx, '#777d95', 417, 208, 2, 30)
     box(ctx, '#777d95', 411, 212, 16, 2)
     shape(ctx, '#646079', [[308, 276], [337, 276], [366, 360], [313, 360]], 2)
+    for (const [x, y, w, h] of [[57, 350, 48, 18], [143, 339, 39, 18], [266, 322, 29, 15], [454, 331, 46, 21], [588, 356, 66, 24]]) {
+      rock(ctx, x, y, w, h, '#262b43', '#53536d')
+    }
     for (const [x, y] of [[310, 283], [337, 287], [313, 302], [344, 309], [317, 324], [353, 337]]) {
+      disc(ctx, '#8d7387', x + 2, y + 7, 7, 2, 1)
       box(ctx, '#76728a', x, y, 2, 7)
       box(ctx, '#ffc592', x - 1, y, 4, 2)
     }
@@ -686,6 +918,12 @@
     shape(ctx, '#a0b1b4', [[0, 180], [64, 170], [133, 147], [173, 166], [234, 166], [301, 183], [408, 185],
       [470, 164], [519, 169], [571, 146], [640, 160], [640, 209], [0, 209]])
     water(ctx, 195, ['#91b9bd', '#83b4b8', '#73aab1', '#669ca7', '#64939f'], ['#afc9c3', '#8fc3bd', '#84a4ab', '#e2d7b6'], 617)
+    for (const [x, y, w] of [[396, 192, 26], [515, 189, 31], [572, 184, 23]]) {
+      box(ctx, '#809b9f', x, y, w, 3)
+      box(ctx, '#bac2b3', x + w * .33, y - 4, w * .43, 4)
+      box(ctx, '#849ca1', x + w * .43, y - 10, 1, 9)
+      box(ctx, '#b7cbc3', x - 5, y + 4, w + 9, 1)
+    }
     const rand = random(390)
     for (let index = 0; index < 80; index += 1) {
       const y = 202 + rand() * 158
@@ -695,12 +933,21 @@
       [327, 239], [242, 253], [114, 268], [0, 283]])
     shape(ctx, '#a1ad9f', [[0, 235], [67, 227], [123, 214], [160, 226], [212, 212], [260, 221], [316, 208],
       [341, 216], [314, 223], [210, 232], [133, 236], [0, 252]])
+    for (const [x, y, w, h] of [[37, 275, 28, 10], [81, 269, 31, 10], [118, 265, 29, 12], [157, 261, 28, 10],
+      [221, 255, 34, 12], [275, 248, 27, 13], [315, 239, 31, 12]]) {
+      rock(ctx, x, y, w, h, '#647f88', '#9da89c')
+      box(ctx, '#adc8bd', x - w * .23, y + 2, w * .54, 1)
+    }
     shape(ctx, '#ded5b6', [[272, 216], [278, 128], [300, 128], [308, 214]])
     shape(ctx, '#f4ecd2', [[279, 214], [283, 128], [296, 128], [300, 216]])
     shape(ctx, '#b5645f', [[276, 151], [302, 151], [304, 166], [275, 166]])
     shape(ctx, '#bf7269', [[274, 180], [305, 180], [306, 195], [273, 195]])
     box(ctx, '#64777b', 284, 200, 8, 16)
+    box(ctx, '#9d786f', 284, 173, 4, 5)
+    box(ctx, '#9c9e8f', 287, 138, 3, 5)
     box(ctx, '#92685e', 272, 124, 35, 6)
+    for (let x = 274; x < 306; x += 4) box(ctx, '#886761', x, 118, 1, 6)
+    box(ctx, '#b48d7a', 272, 118, 35, 1)
     box(ctx, '#a89a88', 279, 111, 22, 13)
     box(ctx, '#fff0b7', 282, 113, 16, 9)
     box(ctx, '#827a75', 289, 111, 2, 12)
@@ -710,6 +957,7 @@
       box(ctx, '#d9c3a6', x, y - 24, w, 24)
       shape(ctx, '#a37068', [[x - 4, y - 24], [x + w * 0.38, y - 39], [x + w + 4, y - 24]])
       box(ctx, '#858b85', x + 6, y - 15, w * 0.26, 9)
+      box(ctx, '#f0d7ac', x + 7, y - 14, w * .23, 2)
       box(ctx, '#728084', x + w * 0.66, y - 12, w * 0.17, 12)
     }
     shape(ctx, '#9b806b', [[0, 298], [148, 265], [184, 268], [0, 338]])
@@ -720,10 +968,14 @@
       box(ctx, '#796b60', x, y - 21, 5, 22)
       box(ctx, '#d1b79a', x, y - 21, 2, 20)
     }
+    for (let board = 0; board < 9; board += 1) {
+      pixelLine(ctx, '#9a806a', board * 16, 296 - board * 3.4, board * 16 + 26, 316 - board * 5)
+    }
+    pixelLine(ctx, '#847260', 22, 291, 147, 252, 1)
   }, (ctx, time) => {
     sparkleWater(ctx, time, 242, 117, '#dce0c1', harborRipples)
     const x = 398 + Math.sin(time / 10) * 59
-    const y = 279 + Math.sin(time * 2.1) * 2
+    const y = 261 + Math.sin(time * 2.1) * 2
     shape(ctx, '#595f71', [[x - 53, y], [x + 44, y], [x + 52, y - 7], [x + 45, y + 11], [x - 39, y + 11]])
     box(ctx, '#bd756e', x - 48, y + 3, 96, 5)
     box(ctx, '#dfd1b8', x - 16, y - 23, 40, 23)
@@ -732,6 +984,9 @@
     box(ctx, '#67848d', x + 5, y - 18, 10, 7)
     box(ctx, '#606e76', x - 19, y - 39, 2, 39)
     box(ctx, '#b76865', x - 17, y - 38, 12, 5)
+    pixelLine(ctx, '#8f8984', x - 17, y - 32, x + 26, y - 7)
+    box(ctx, '#f0dfbf', x - 15, y - 22, 37, 1)
+    box(ctx, '#e6c0a1', x - 40, y + 3, 72, 1)
     for (let wave = 0; wave < 5; wave += 1) box(ctx, '#b5d2c7', x - 54 - wave * 12, y + 10 + wave * 2, 21 - wave * 2, 1)
     gull(ctx, 195 + time * 8, 124 + Math.sin(time) * 9, time, '#657f88')
     gull(ctx, 225 + time * 9.4, 104 + Math.sin(time + 0.8) * 8, time + 0.3, '#687f89')

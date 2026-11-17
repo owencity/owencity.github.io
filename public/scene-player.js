@@ -17,10 +17,8 @@
   screens.forEach(canvas => { canvas.width = engine.width; canvas.height = engine.height })
   contexts.forEach(context => { context.imageSmoothingEnabled = false })
 
-  const select = panel.querySelector('select')
-  const play = panel.querySelector('[data-scene-play]')
-  const hint = panel.querySelector('.scene-hint')
-  const progress = panel.querySelector('.scene-progress span')
+  const play = document.querySelector('[data-scene-play]')
+  if (!play) return
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)')
   const duration = 10_000
   const frameInterval = 1000 / 24
@@ -38,23 +36,15 @@
   let transitionElapsed = transitionDuration
   let animationId = null
 
-  engine.scenes.forEach((scene, index) => {
-    const option = document.createElement('option')
-    option.value = String(index)
-    option.textContent = `${String(index + 1).padStart(2, '0')} · ${scene.name}`
-    select.append(option)
-  })
-
   function updateLabels() {
     const scene = engine.scenes[sceneIndex]
-    select.value = String(sceneIndex)
     panel.querySelector('.scene-label').textContent = scene.name
     panel.querySelector('.scene-counter').textContent = `${String(sceneIndex + 1).padStart(2, '0')} / ${String(engine.scenes.length).padStart(2, '0')}`
     panel.dataset.scene = scene.id
     panel.dataset.paused = String(paused)
-    play.innerHTML = paused ? '▶ <span>재생</span>' : 'Ⅱ <span>정지</span>'
+    play.querySelector('span').textContent = paused ? '▶' : 'Ⅱ'
     play.setAttribute('aria-label', paused ? '배경 재생' : '배경 정지')
-    hint.textContent = paused ? '멈춘 풍경' : '10초마다 전환'
+    play.title = paused ? '배경 재생' : '배경 정지'
     try { sessionStorage.setItem('owencity-pixel-scene', String(sceneIndex)) } catch {}
   }
 
@@ -71,7 +61,6 @@
         context.globalAlpha = 1
       }
     }
-    progress.style.transform = `scaleX(${Math.min(1, elapsed / duration)})`
   }
 
   function chooseScene(index, animate = false) {
@@ -116,9 +105,6 @@
     try { localStorage.setItem('owencity-pixel-paused', String(paused)) } catch {}
     schedule()
   })
-  select.addEventListener('change', () => { chooseScene(Number(select.value)); lastTimestamp = null })
-  panel.querySelector('[data-scene-prev]').addEventListener('click', () => { chooseScene(sceneIndex - 1); lastTimestamp = null })
-  panel.querySelector('[data-scene-next]').addEventListener('click', () => { chooseScene(sceneIndex + 1); lastTimestamp = null })
   document.addEventListener('visibilitychange', schedule)
   reducedMotion.addEventListener('change', () => {
     if (reducedMotion.matches) {
@@ -129,7 +115,7 @@
       schedule()
     }
   })
-  panel.querySelector('.scene-controls').hidden = false
+  play.hidden = false
   updateLabels()
   paint()
   schedule()
