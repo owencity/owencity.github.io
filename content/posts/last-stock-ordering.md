@@ -75,7 +75,7 @@ flowchart TD
 
 여기서 돌아가는 차례는 각 연결부로 들어온 하드웨어 요청의 처리 기회다. 장치 A·B는 쇼핑몰 고객 A·B를 뜻하지 않는다. 이번 재고를 고객 A에게 주고 다음 재고를 고객 B에게 준다는 규칙도 아니다.
 
-이 사례로 **동시에 들어온 요청도 정해진 규칙과 내부 상태에 따라 하나를 선택할 수 있다**는 점을 이해했다. Intel Core·AMD Ryzen·Apple M 시리즈가 실제로 어느 요청을 먼저 선택하는지는 이 문서로 알 수 없다.
+이 사례로 **동시에 들어온 요청도 정해진 규칙과 내부 상태에 따라 하나를 선택할 수 있다**는 점을 이해했다. 여기까지는 FPGA 부품의 사례다. 실제 CPU에서는 어떻게 처리하는지 Intel·AMD·Apple의 자료도 추가로 찾아봤다.
 
 ## 잠금 값 0과 1의 뜻
 
@@ -120,9 +120,43 @@ flowchart TD
 
 하드웨어 중재와 CAS도 역할이 다르다. 중재기는 같은 자원을 쓰려는 요청 중 어느 요청을 처리할지 고른다. CAS는 현재값을 비교하고, 조건이 맞으면 바꾸는 일을 원자적으로 수행한다. **CAS 자체가 번호순이나 round-robin으로 승자를 고르는 것은 아니다.** 앞의 FPGA 예시가 이 CPU의 내부 동작을 그대로 보여주는 것도 아니다.
 
-Intel의 Xeon 관련 자료는 캐시된 메모리의 잠긴 연산에서 캐시 일관성 메커니즘으로 원자적 실행을 보장하는 경우를 설명한다. 항상 메모리 버스 전체를 잠그는 것은 아니다. 다만 이 자료로 특정 실행에서 스레드 A의 연산이 먼저 처리된 정확한 이유까지 알 수는 없다. [Intel 캐시 일관성과 원자적 실행](https://www.intel.com/content/www/us/en/support/articles/000099741/processors/intel-xeon-processors.html)
-
 이 예시는 잠금을 얻는 원리를 설명한 것이다. 실제 잠금 구현에는 해제, 실패한 요청의 대기·재시도, 메모리 접근 순서에 대한 처리도 필요하다.
+
+## 실제 CPU에서 요청을 조정하는 곳
+
+남은 질문은 **“잠금이 안전한가?”가 아니라 “두 코어의 요청이 겹쳤을 때, 어느 회로가 어떤 기준으로 먼저 처리하는가?”**였다. 제품의 설계 자료와 실제 칩을 측정한 연구를 나누어 살펴봤다.
+
+이때 등장하는 **CPU 캐시**는 메모리의 데이터를 가까이 두고 빠르게 접근하는 저장 공간이다. **캐시 라인**은 캐시가 데이터를 관리하는 묶음 단위다. 같은 메모리 주소의 데이터가 여러 코어의 캐시에 들어 있을 수 있으므로, 한쪽이 값을 바꿀 때 다른 쪽의 사본도 함께 관리해야 한다. 이를 **캐시 일관성(cache coherence)**이라고 한다.
+
+| 확인한 대상 | 요청을 조정하는 구조와 동작 | 확인한 자료의 범위 |
+| --- | --- | --- |
+| **Intel 2세대 Core · Sandy Bridge** | 코어와 캐시를 잇는 **링(ring)의** 각 연결 지점에서 중재한다. **Cache Box**라는 캐시 제어 회로는 중재와 함께 자신이 담당하는 주소의 일관성·순서 유지를 맡는다. | Intel 발표 슬라이드 8~10. 링 자체가 요청의 접수순 처리를 보장하지 않는다. 이 설명을 최신 Core 전체의 구조로 확대하지 않는다. [Intel 발표](https://old.hotchips.org/wp-content/uploads/hc_archives/hc23/HC23.19.9-Desktop-CPUs/HC23.19.911-Sandy-Bridge-Lempel-Intel-Rev%207.pdf) |
+| **AMD Ryzen · GDC 2024 자료** | 여러 코어를 묶은 **CCX** 안에서는 L3 캐시의 관리 정보로 다른 코어가 가진 데이터를 확인한다. CCX 사이의 데이터는 **Data Fabric**이라는 연결망을 거친다. | 슬라이드 27~29는 캐시 간 데이터 전달과 그 비용을 설명한다. 같은 주소의 두 CAS 중 어느 쪽을 먼저 고르는지에 대한 규칙은 이 부분에 없다. [AMD 발표](https://gpuopen.com/gdc-presentations/2024/GDC2024_AMD_Ryzen_Processor_Software_Optimization.pdf) |
+| **Apple M1 · Tech Talks 2021** | 여러 코어를 묶은 **클러스터**마다 L2 캐시를 공유하고, 클러스터 사이는 **Apple Fabric**으로 연결한다. | Apple이 공개한 이 설명은 M1의 구조를 다룬다. 어떤 회로가 두 CAS의 선후를 정하는지, 동률일 때 무엇을 우선하는지는 설명하지 않는다. [Apple 발표](https://developer.apple.com/videos/play/tech-talks/110147/) |
+
+Intel 자료에서는 **중재를 맡은 회로가 어디에 있는지**까지 확인할 수 있었다. 다만 링으로 요청을 보내는 순서와, 같은 주소의 CAS 중 어느 연산이 먼저 성공하는지는 구분해야 한다. 연결망의 한 지점을 먼저 통과했다고 잠금 획득까지 먼저 끝난다는 설명은 아니다.
+
+실제 Core 제품의 선택 규칙을 더 구체적으로 다룬 연구도 있었다. USENIX Security 2021 논문은 **Core i7-9700과 i7-6700K**에서 메모리 읽기 지연을 측정했다. 연구진은 **이미 링에서 이동 중인 요청을, 그 연결 지점에서 새로 진입하려는 요청보다 우선하는 동작**을 보고했다. 아래는 그 중재 규칙을 간추린 그림이다. 제조사의 명세와는 구분되는 측정 연구다. [논문 §3·§3.2, 인쇄 647·651쪽](https://www.usenix.org/system/files/sec21-paccagnella.pdf)
+
+```mermaid
+flowchart TD
+    moving["이미 링에서<br/>이동 중인 요청"] --> compete["같은 연결 지점에서<br/>같은 링 통로의<br/>전송 자리를 두고 경합"]
+    incoming["이 연결 지점에서<br/>새로 보내려는 요청"] --> compete
+    compete --> pass["이동 중이던 요청이<br/>먼저 통과"]
+    compete --> wait["새 요청은<br/>진입할 자리를 기다림"]
+```
+
+같은 방향·같은 통로에서 이동 중이던 요청이 새 요청의 진입을 막는 경우를 그렸다. 서로 다른 통로의 요청까지 모두 충돌한다는 뜻은 아니다.
+
+같은 연결 지점의 코어와 L3 캐시 일부가 동일한 링 통로에 새 요청을 넣으려는 경우도 다뤘다. 연구진은 관측된 지연 차이를 **round-robin으로 설명할 수 있다고 추론**했다. 이 연구는 읽기 요청의 이동을 분석한 것이며, **동일 주소의 CAS 두 개 중 누가 성공하는지 시험한 결과는 아니다.** [논문 §3.2, 인쇄 652쪽](https://www.usenix.org/system/files/sec21-paccagnella.pdf)
+
+잠금 자체에 대해서는 Intel의 아키텍처 매뉴얼 §9.1·§9.1.4가 캐시 잠금과 캐시 일관성을 이용하는 처리를 설명한다. 또한 경합하는 잠금의 공정성을 하드웨어가 보장하지 않는다고 명시한다. 따라서 특정 링 지점의 round-robin 설명을 “잠금을 요청한 스레드들이 반드시 번갈아 성공한다”는 뜻으로 받아들일 수 없다. [Intel SDM Vol.3A, 2023-12판](https://cdrdv2-public.intel.com/812386/253668-sdm-vol-3a.pdf)
+
+AMD의 아키텍처 매뉴얼도 다른 캐시를 조회하는 과정과 `LOCK CMPXCHG` 같은 원자 연산의 처리 조건을 설명한다. 하지만 캐시 구성과 일관성을 유지하는 구체적인 방식은 구현에 따라 달라진다. 확인한 §7.3·§7.3.3·§7.6에는 Ryzen에서 동시에 경합한 두 CAS 중 어느 코어를 먼저 선택하는지 계산할 수 있는 규칙은 없었다. [AMD APM Vol.2, rev3.46](https://docs.amd.com/v/u/en-US/24593_3.46_APM_Vol2)
+
+Apple의 최신 CPU Optimization Guide는 개발자 계정과 별도 약정 동의가 필요해 본문을 확인하지 못했다. 그러므로 Apple의 모든 자료에 해당 규칙이 없다고 단정할 수는 없다. 이번에 확인한 공개 발표에서는 M1의 캐시·연결망 구조까지만 알 수 있었다. [Apple 가이드 접근 안내](https://developer.apple.com/documentation/apple-silicon/cpu-optimization-guide)
+
+자료를 더 찾아 **실제 CPU의 중재 위치와 일부 요청의 우선순위**까지 확인했다. 아직 남은 것은 **같은 잠금 주소에 대한 두 CAS가 겹친 순간, 특정 코어를 먼저 고르는 제품별 세부 규칙**이다. ‘코어 번호가 작으면 먼저’나 ‘모든 CPU가 round-robin’이라고 채워 넣을 근거는 확보하지 못했다.
 
 ## 잠금 해제와 재고 반환은 별개의 처리다
 
@@ -179,7 +213,7 @@ Intel의 Xeon 관련 자료는 캐시된 메모리의 잠긴 연산에서 캐시
 
 ## 참고 자료
 
-아래 자료의 본문은 2026-11-17에 확인했다. 입력 번호와 우선순위 설명에 사용한 AMD 인터페이스·중재 문서는 2026-11-18에 확인했다. 발행·갱신일은 각 문서의 표기다.
+기존 자료는 2026-11-17에 확인했다. AMD 인터페이스·중재 문서와 실제 CPU를 추가 조사한 Intel·AMD·Apple 자료, USENIX 논문은 2026-11-18에 확인했다. Apple CPU Optimization Guide는 접근 안내만 확인했으며 본문은 읽지 못했다. 발행·갱신일은 각 자료의 표기다.
 
 | 자료 | 발행·갱신일 | 확인한 내용 |
 | --- | --- | --- |
@@ -189,6 +223,12 @@ Intel의 Xeon 관련 자료는 캐시된 메모리의 잠긴 연산에서 캐시
 | [AMD 인터페이스 설명](https://docs.amd.com/r/en-US/pg059-axi-interconnect/Crossbar-Signal-Interface?contentId=rFhFimGP265HFnSmOuI56g) | 2025-12-19 · PG059 2.1 | 장치별 인터페이스 신호 묶음을 슬롯이라고 부른다는 설명. |
 | [AMD Transaction Arbitration](https://docs.amd.com/r/en-US/pg059-axi-interconnect/Transaction-Arbitration) | 2025-12-19 · PG059 2.1 | FPGA용 AXI Interconnect의 우선순위·입력 번호·round-robin. |
 | [Microsoft InterlockedCompareExchange](https://learn.microsoft.com/en-us/windows/win32/api/winnt/nf-winnt-interlockedcompareexchange) | 2022-05-24 | 비교·조건부 교환의 원자성. |
-| [Intel 캐시 일관성과 원자적 실행](https://www.intel.com/content/www/us/en/support/articles/000099741/processors/intel-xeon-processors.html) | 최종 검토 2026-07-08 | 캐시된 메모리의 잠긴 연산을 다룬 Xeon 관련 설명. |
+| [Intel Sandy Bridge 발표](https://old.hotchips.org/wp-content/uploads/hc_archives/hc23/HC23.19.9-Desktop-CPUs/HC23.19.911-Sandy-Bridge-Lempel-Intel-Rev%207.pdf) | 2011-08 · Hot Chips 23 | 2세대 Core. 슬라이드 8~10의 Cache Box·링 중재·요청 순서, 31~45의 캐시 읽기 흐름. |
+| [Intel SDM Vol.3A](https://cdrdv2-public.intel.com/812386/253668-sdm-vol-3a.pdf) | 2023-12 · 253668-082US | §9.1·§9.1.4의 locked operation·캐시 일관성·잠금 공정성의 한계. |
+| [AMD Ryzen Software Optimization](https://gpuopen.com/gdc-presentations/2024/GDC2024_AMD_Ryzen_Processor_Software_Optimization.pdf) | 2024-03 · GDC 2024 | 슬라이드 27~29의 캐시 일관성·코어 간 전달·Data Fabric. |
+| [AMD APM Vol.2](https://docs.amd.com/v/u/en-US/24593_3.46_APM_Vol2) | 2026-10-28 · rev3.46 | §7.3·§7.3.3·§7.6의 캐시 조회·원자 연산·구현별 차이. |
+| [Apple CPU 작업 스케줄링 발표](https://developer.apple.com/videos/play/tech-talks/110147/) | Tech Talks 2021 · 정확한 게시일 미표기 | M1의 클러스터·공유 L2·Apple Fabric 설명. |
+| [Apple CPU Optimization Guide 안내](https://developer.apple.com/documentation/apple-silicon/cpu-optimization-guide) | 미표기 | 개발자 계정·추가 약정이 필요한 접근 조건만 확인. 가이드 본문은 미확인. |
+| [Lord of the Ring(s)](https://www.usenix.org/system/files/sec21-paccagnella.pdf) | 2021-08 · USENIX Security 2021 | 제조사 명세가 아닌 측정 연구. §3·§3.2의 i7-9700·i7-6700K 읽기 트래픽 중재, 관측과 추론의 구분. |
 | [MySQL 8.4 Locking Reads](https://dev.mysql.com/doc/refman/8.4/en/innodb-locking-reads.html) | 미표기 | 잠금 읽기, 트랜잭션 조건, 커밋·롤백 시 해제. |
 | [선물하기 시스템의 상품 재고는 어떻게 관리되어질까?](https://techblog.woowahan.com/2709/) | 2021-01-19 | 상품권 구매에서 초과 판매와 재고 변경의 동시성을 다룬 사례. |
