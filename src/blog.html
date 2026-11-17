@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="개발하며 살펴본 문제와 선택한 방법을 기록합니다.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="블로그 | 김동규">
+  <meta property="og:description" content="개발하며 살펴본 문제와 선택한 방법을 기록합니다.">
+  <title>블로그 | 김동규</title>
+  <link rel="icon" href="./assets/brand.png">
+  <link rel="stylesheet" href="./site.css?v={{PIXEL_ASSET_VERSION}}">
+  <link rel="stylesheet" href="./pixel-theme.css?v={{PIXEL_ASSET_VERSION}}">
+  <link rel="stylesheet" href="./blog.css?v={{PIXEL_ASSET_VERSION}}">
+  <script src="./site.js?v={{PIXEL_ASSET_VERSION}}" defer></script>
+  <script src="./pixel-scenes.js?v={{PIXEL_ASSET_VERSION}}" defer></script>
+  <script src="./scene-player.js?v={{PIXEL_ASSET_VERSION}}" defer></script>
+</head>
+<body class="blog-page">
+  <div class="scene-wallpaper" aria-hidden="true"><canvas width="640" height="360" data-scene-wallpaper></canvas></div>
+  <a class="skip" href="#content">본문 바로 가기</a>
+  <aside class="sidebar" id="sidebar" aria-label="사이트 메뉴">
+    <button class="control drawer-close" type="button" aria-label="메뉴 닫기">닫기</button>
+    <div class="profile">
+      <img src="{{PROFILE_AVATAR}}" alt="" width="52" height="52" data-avatar>
+      <div><strong>김동규</strong><span>@owencity</span></div>
+    </div>
+    <div class="profile-links">
+      <a href="https://github.com/owencity" target="_blank" rel="noopener">GitHub 프로필 ↗</a>
+    </div>
+    <nav class="side-nav" aria-label="사이트 메뉴">
+      <a href="./index.html#about">소개</a>
+      <a href="./index.html#projects">프로젝트</a>
+      <a href="./index.html#activity">활동</a>
+      <a href="./blog.html" class="current" aria-current="page">블로그</a>
+      <a class="external-nav" href="https://www.devkdk.com" target="_blank" rel="noopener">포트폴리오 ↗</a>
+    </nav>
+  </aside>
+  <div class="scrim" hidden></div>
+  <div class="shell">
+    <header class="topbar">
+      <button class="control drawer-open" type="button" aria-expanded="false" aria-controls="sidebar">메뉴</button>
+      <a class="brand" href="./index.html"><span class="pixel-mark" aria-hidden="true"></span>OWENCITY</a>
+      <nav class="topnav" aria-label="빠른 이동">
+        <a href="./index.html#about">소개</a><a href="./index.html#projects">프로젝트</a><a href="./index.html#activity">활동</a><a href="./blog.html" class="current" aria-current="page">블로그</a>
+        <a class="external-nav" href="https://www.devkdk.com" target="_blank" rel="noopener">포트폴리오 ↗</a>
+      </nav>
+      <button class="control scene-toggle" type="button" data-scene-play aria-label="배경 정지" title="배경 정지" hidden><span aria-hidden="true">Ⅱ</span></button>
+      <button class="control theme" type="button" aria-pressed="false" aria-label="다크 모드"><span aria-hidden="true">☾</span></button>
+    </header>
+    <main class="content" id="content" tabindex="-1">
+      <section class="blog-index" id="writing" aria-labelledby="writing-title">
+        <header class="blog-heading">
+          <h1 id="writing-title">블로그</h1>
+          <p>개발하며 살펴본 문제와 선택한 방법을 기록합니다.</p>
+        </header>
+        {{BLOG_PREVIEW_NOTICE}}
+        <div class="blog-toolbar">
+          <p class="post-count">글 <strong>{{POST_COUNT}}</strong>편</p>
+          <label class="search" hidden><span class="sr-only">글 제목·요약·분류 검색</span><input type="search" placeholder="제목·요약·분류 검색" aria-controls="posts"></label>
+        </div>
+        <div id="posts">{{POSTS}}</div>
+        <p class="empty search-empty" hidden>검색어와 일치하는 글이 없습니다.</p>
+        <p class="search-status sr-only" role="status"></p>
+      </section>
+    </main>
+    <footer class="footer">
+      <span>© 김동규</span>
+      <div class="skin-copyright"><span>Copyright <a href="https://bluemiv.tistory.com/" target="_blank" rel="noopener">Bluemiv</a></span><span>Designed by <a href="https://bluemiv.tistory.com/" target="_blank" rel="noopener">Bluemiv</a></span></div>
+    </footer>
+  </div>
+</body>
+</html>

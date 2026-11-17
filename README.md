@@ -1,6 +1,6 @@
 # 김동규의 GitHub와 개발 기록
 
-자기소개, GitHub 프로젝트와 활동, 블로그를 함께 보여주는 사이트다. [사이트 보기](https://owencity.github.io) · [포트폴리오](https://www.devkdk.com)
+자기소개와 GitHub 활동은 홈에서, 작성한 글은 별도 블로그에서 보여준다. [사이트 보기](https://owencity.github.io) · [블로그](https://owencity.github.io/blog.html) · [포트폴리오](https://www.devkdk.com)
 
 ## 내 컴퓨터에서 보기
 
@@ -18,16 +18,18 @@ npm run preview
 
 1. `content/posts/`에 Markdown 파일을 만든다. 그림은 `public/assets/`에 넣는다.
 2. `content/posts.json`에 제목, 요약, 날짜, 파일 경로를 추가한다. 작성 중인 글은 `draft: true`로 둔다.
-3. 미리보기에서 본문, 목차, 그림을 확인한다.
+3. 미리보기의 `blog.html`에서 글 목록을 확인하고, 글을 눌러 본문·목차·그림을 확인한다.
 4. 검수를 마친 글만 `draft: false`로 바꾼다. `npm run build`와 사이트 배포에는 이 글만 포함된다. 공개 저장소에 소스를 올리면 초안 Markdown도 저장소에서는 읽을 수 있으므로, 원문까지 비공개로 둘 글은 업로드하지 않는다.
 
 표와 Mermaid 다이어그램을 지원한다. HTML 파일은 빌드할 때 생성하므로 직접 수정하지 않는다. 현재 재고 동시성 글은 커머스 저장소에서 가져온 미검수 사본이다. 커머스 원본의 변경을 자동으로 가져오는 연결은 아직 없으며, 공개하기 전에 최신 원본과 대조한다.
+
+블로그는 작성일이 최신인 글부터 표시한다. 검색은 제목·요약·분류에서 찾는다. 공개한 글이 없으면 준비 중 안내를 표시하며, 미리보기에서는 초안임을 표시한 뒤 원고를 읽을 수 있다.
 
 ## 픽셀 배경
 
 서로 다른 풍경 10개를 Canvas로 그린다. 재생 중에는 10초마다 풍경이 바뀐다. 상단 메뉴의 정지 버튼을 누르면 풍경 전환과 배·기차 등의 움직임이 모두 멈춘다. 같은 버튼으로 다시 재생할 수 있다. 기기의 동작 줄이기 설정이 켜져 있으면 정지 상태로 시작하고, 다른 탭을 보는 동안에는 재생 시간을 세지 않는다.
 
-풍경은 `public/pixel-scenes.js`, 재생 동작은 `public/scene-player.js`, 테두리·색상은 `public/pixel-theme.css`에서 수정한다. 풍경과 별개로 글과 메뉴는 불투명한 패널에 표시한다.
+풍경은 `public/pixel-scenes.js`, 재생 동작은 `public/scene-player.js`, 테두리·색상은 `public/pixel-theme.css`에서 수정한다. 홈·글 목록·본문에 같은 배경을 사용한다. 브라우저 저장소를 사용할 수 있는 같은 탭에서는 페이지를 이동할 때 장면과 재생 위치를 이어간다. 별도의 풍경 전시 박스는 두지 않는다. 글과 메뉴는 불투명한 패널에 표시한다.
 
 ## GitHub 정보
 
@@ -54,8 +56,9 @@ npm run preview
 
 | 위치 | 수정할 내용 |
 | --- | --- |
-| `src/` | 홈과 글 상세의 HTML 구성 |
+| `src/` | 홈, 블로그 목록, 글 상세의 HTML 구성 |
 | `public/site.css`, `public/site.js` | 디자인, 검색, 메뉴, 테마 |
+| `public/blog.css` | 블로그 목록과 본문의 글자·간격·배치 |
 | `public/pixel-*.css`, `public/pixel-scenes.js`, `public/scene-player.js` | 픽셀 디자인, 풍경과 재생 조작 |
 | `content/` | 글 본문과 목록 |
 | `scripts/` | GitHub 조회, Markdown 변환, 미리보기 |

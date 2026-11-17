@@ -9,13 +9,14 @@
   <meta property="og:description" content="{{ARTICLE_SUMMARY}}">
   <title>{{ARTICLE_TITLE}} | 김동규</title>
   <link rel="icon" href="{{ASSET_PREFIX}}assets/brand.png">
-  <link rel="stylesheet" href="{{ASSET_PREFIX}}site.css">
+  <link rel="stylesheet" href="{{ASSET_PREFIX}}site.css?v={{PIXEL_ASSET_VERSION}}">
   <link rel="stylesheet" href="{{ASSET_PREFIX}}pixel-theme.css?v={{PIXEL_ASSET_VERSION}}">
-  <script src="{{ASSET_PREFIX}}site.js" defer></script>
+  <link rel="stylesheet" href="{{ASSET_PREFIX}}blog.css?v={{PIXEL_ASSET_VERSION}}">
+  <script src="{{ASSET_PREFIX}}site.js?v={{PIXEL_ASSET_VERSION}}" defer></script>
   <script src="{{ASSET_PREFIX}}pixel-scenes.js?v={{PIXEL_ASSET_VERSION}}" defer></script>
   <script src="{{ASSET_PREFIX}}scene-player.js?v={{PIXEL_ASSET_VERSION}}" defer></script>
   <script src="{{ASSET_PREFIX}}mermaid.min.js" defer></script>
-  <script src="{{ASSET_PREFIX}}diagrams.js" defer></script>
+  <script src="{{ASSET_PREFIX}}diagrams.js?v={{PIXEL_ASSET_VERSION}}" defer></script>
 </head>
 <body class="article-page">
   <div class="scene-wallpaper" aria-hidden="true"><canvas width="640" height="360" data-scene-wallpaper></canvas></div>
@@ -33,7 +34,7 @@
       <a href="{{ASSET_PREFIX}}index.html#about">소개</a>
       <a href="{{ASSET_PREFIX}}index.html#projects">프로젝트</a>
       <a href="{{ASSET_PREFIX}}index.html#activity">활동</a>
-      <a href="{{ASSET_PREFIX}}index.html#writing" class="current">블로그</a>
+      <a href="{{ASSET_PREFIX}}blog.html" class="current" aria-current="location">블로그</a>
       <a class="external-nav" href="https://www.devkdk.com" target="_blank" rel="noopener">포트폴리오 ↗</a>
     </nav>
   </aside>
@@ -43,15 +44,14 @@
       <button class="control drawer-open" type="button" aria-expanded="false" aria-controls="sidebar">메뉴</button>
       <a class="brand" href="{{ASSET_PREFIX}}index.html"><span class="pixel-mark" aria-hidden="true"></span>OWENCITY</a>
       <nav class="topnav" aria-label="빠른 이동">
-        <a href="{{ASSET_PREFIX}}index.html#about">소개</a><a href="{{ASSET_PREFIX}}index.html#projects">프로젝트</a><a href="{{ASSET_PREFIX}}index.html#activity">활동</a><a href="{{ASSET_PREFIX}}index.html#writing" class="current">블로그</a>
+        <a href="{{ASSET_PREFIX}}index.html#about">소개</a><a href="{{ASSET_PREFIX}}index.html#projects">프로젝트</a><a href="{{ASSET_PREFIX}}index.html#activity">활동</a><a href="{{ASSET_PREFIX}}blog.html" class="current" aria-current="location">블로그</a>
         <a class="external-nav" href="https://www.devkdk.com" target="_blank" rel="noopener">포트폴리오 ↗</a>
       </nav>
       <button class="control scene-toggle" type="button" data-scene-play aria-label="배경 정지" title="배경 정지" hidden><span aria-hidden="true">Ⅱ</span></button>
       <button class="control theme" type="button" aria-pressed="false" aria-label="다크 모드"><span aria-hidden="true">☾</span></button>
     </header>
     <main class="content" id="content" tabindex="-1">
-      {{SCENE_PLAYER}}
-      <a class="back-link" href="{{ASSET_PREFIX}}index.html#writing">← 글 목록</a>
+      <a class="back-link" href="{{ASSET_PREFIX}}blog.html">← 글 목록</a>
       <div class="reading">
         <details class="toc">
           <summary>목차</summary>

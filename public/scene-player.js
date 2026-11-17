@@ -1,10 +1,11 @@
 /* Scenery is decorative. Reading, links, and navigation work independently. */
 (() => {
   const engine = window.PixelScenes
-  const panel = document.querySelector('.scenery')
+  const panel = document.querySelector('.scene-wallpaper')
   if (!engine?.scenes?.length || !panel) return
 
-  const screens = [...document.querySelectorAll('[data-scene-wallpaper], [data-scene-window]')]
+  const screens = [...document.querySelectorAll('[data-scene-wallpaper]')]
+  if (!screens.length) return
   const contexts = screens.map(canvas => canvas.getContext('2d', { alpha: false }))
   if (contexts.some(context => !context)) return
   const frame = document.createElement('canvas')
@@ -24,13 +25,23 @@
   const frameInterval = 1000 / 24
   const transitionDuration = 800
   let sceneIndex = 0
-  let paused = reducedMotion.matches
-  try {
-    const storedIndex = Number(sessionStorage.getItem('owencity-pixel-scene'))
-    if (Number.isInteger(storedIndex) && storedIndex >= 0 && storedIndex < engine.scenes.length) sceneIndex = storedIndex
-    paused ||= localStorage.getItem('owencity-pixel-paused') === 'true'
-  } catch {}
   let elapsed = 0
+  let paused = reducedMotion.matches
+  const playbackKey = 'owencity-pixel-playback'
+  function restorePlayback() {
+    try {
+      const storedIndex = Number(sessionStorage.getItem('owencity-pixel-scene'))
+      if (Number.isInteger(storedIndex) && storedIndex >= 0 && storedIndex < engine.scenes.length) sceneIndex = storedIndex
+      const saved = JSON.parse(sessionStorage.getItem(playbackKey))
+      const savedIndex = engine.scenes.findIndex(scene => scene.id === saved?.sceneId)
+      if (savedIndex >= 0 && Number.isFinite(saved.elapsed) && saved.elapsed >= 0 && saved.elapsed < duration) {
+        sceneIndex = savedIndex
+        elapsed = saved.elapsed
+      }
+      paused = reducedMotion.matches || localStorage.getItem('owencity-pixel-paused') === 'true'
+    } catch {}
+  }
+  restorePlayback()
   let lastTimestamp = null
   let lastPaint = -Infinity
   let transitionElapsed = transitionDuration
@@ -38,14 +49,16 @@
 
   function updateLabels() {
     const scene = engine.scenes[sceneIndex]
-    panel.querySelector('.scene-label').textContent = scene.name
-    panel.querySelector('.scene-counter').textContent = `${String(sceneIndex + 1).padStart(2, '0')} / ${String(engine.scenes.length).padStart(2, '0')}`
     panel.dataset.scene = scene.id
     panel.dataset.paused = String(paused)
     play.querySelector('span').textContent = paused ? '▶' : 'Ⅱ'
     play.setAttribute('aria-label', paused ? '배경 재생' : '배경 정지')
     play.title = paused ? '배경 재생' : '배경 정지'
     try { sessionStorage.setItem('owencity-pixel-scene', String(sceneIndex)) } catch {}
+  }
+
+  function rememberPlayback() {
+    try { sessionStorage.setItem(playbackKey, JSON.stringify({ sceneId: engine.scenes[sceneIndex].id, elapsed })) } catch {}
   }
 
   function paint() {
@@ -103,9 +116,27 @@
     paused = !paused
     updateLabels()
     try { localStorage.setItem('owencity-pixel-paused', String(paused)) } catch {}
+    rememberPlayback()
     schedule()
   })
-  document.addEventListener('visibilitychange', schedule)
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) rememberPlayback()
+    schedule()
+  })
+  window.addEventListener('pagehide', () => {
+    rememberPlayback()
+    if (animationId !== null) cancelAnimationFrame(animationId)
+    animationId = null
+    lastTimestamp = null
+  })
+  window.addEventListener('pageshow', event => {
+    if (!event.persisted) return
+    restorePlayback()
+    transitionElapsed = transitionDuration
+    updateLabels()
+    paint()
+    schedule()
+  })
   reducedMotion.addEventListener('change', () => {
     if (reducedMotion.matches) {
       paused = true

@@ -109,7 +109,7 @@ connectSearch(
   document.querySelectorAll('#posts .post-card'),
   document.querySelector('.search-empty'),
   document.querySelector('.search-status'),
-  (post) => `${post.querySelector('h3').textContent} ${post.querySelector('.post-summary').textContent}`,
+  (post) => `${post.querySelector('h2, h3').textContent} ${post.querySelector('.post-summary').textContent} ${post.dataset.category || ''}`,
 )
 connectSearch(
   document.querySelector('#repository-search'),
@@ -122,6 +122,10 @@ connectSearch(
 const sectionLinks = document.querySelectorAll('.side-nav a[href^="#"], .topnav a[href^="#"]')
 function markSection() {
   const selected = window.location.hash || '#about'
+  if (selected === '#writing' && document.querySelector('#about')) {
+    window.location.replace(new URL('./blog.html', window.location.href).href)
+    return
+  }
   for (const link of sectionLinks) {
     if (link.hash === selected) link.setAttribute('aria-current', 'location')
     else link.removeAttribute('aria-current')

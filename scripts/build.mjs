@@ -10,7 +10,7 @@ const output = new URL('dist/', root);
 const includeDrafts = process.argv.includes('--drafts');
 const readJson = async name => JSON.parse(await readFile(new URL(name, root), 'utf8'));
 const [config, github, allPosts] = await Promise.all([readJson('site.config.json'), readJson('data/github.json'), readJson('content/posts.json')]);
-const posts = allPosts.filter(post => includeDrafts || !post.draft);
+const posts = allPosts.filter(post => includeDrafts || !post.draft).sort((first, second) => second.date.localeCompare(first.date));
 const escape = value => String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
 const safeUrl = value => {
   try { const address = new URL(value); return address.protocol === 'https:' ? address.href : '#'; } catch { return '#'; }
@@ -65,9 +65,9 @@ function activity() {
 
 function postCards() {
   return posts.length ? `<ul class="posts">${posts.map(post => `<li class="card post-card" data-category="${escape(post.category)}">
-    <a class="post-link" href="./${escape(post.slug)}.html"><img src="./${escape(post.image)}" alt="두 구매 요청이 마지막 재고 하나에 접근하는 상황" width="520" height="260" loading="lazy">
-    <div class="post-body"><p class="meta"><span class="chip">${escape(post.category)}</span>${post.draft ? '<span class="chip">검수 전 초안</span>' : ''}<time datetime="${post.date}">${date(post.date)}</time></p>
-    <h3>${escape(post.title)}</h3><p class="post-summary">${escape(post.summary)}</p></div></a></li>`).join('')}</ul>` : '<ul class="posts"></ul><p class="publication-empty">공개할 글을 준비하고 있습니다.</p>';
+    <a class="post-link" href="./${escape(post.slug)}.html">${post.image ? `<img src="./${escape(post.image)}" alt="" width="520" height="260" loading="lazy">` : ''}
+    <div class="post-body"><p class="meta"><span class="chip">${escape(post.category)}</span>${post.draft ? '<span class="chip">검수 전 초안</span>' : ''}<time datetime="${escape(post.date)}">${date(post.date)}</time></p>
+    <h2>${escape(post.title)}</h2><p class="post-summary">${escape(post.summary)}</p><span class="post-read">글 읽기 <span aria-hidden="true">→</span></span></div></a></li>`).join('')}</ul>` : '<ul class="posts"></ul><div class="publication-empty"><strong>첫 글을 준비하고 있습니다.</strong><p>공개한 글은 이곳에서 읽을 수 있습니다.</p></div>';
 }
 
 function renderArticle(post, source) {
@@ -100,11 +100,10 @@ function renderArticle(post, source) {
   return { content, toc: headings.map(heading => `<a class="toc-${heading.tag}" href="#${heading.id}">${escape(heading.label)}</a>`).join('') };
 }
 
-const pixelAssets = await Promise.all(['pixel-theme.css', 'pixel-scenes.js', 'scene-player.js'].map(name => readFile(new URL(`public/${name}`, root))));
+const pixelAssets = await Promise.all(['site.css', 'site.js', 'blog.css', 'pixel-theme.css', 'pixel-scenes.js', 'scene-player.js', 'diagrams.js'].map(name => readFile(new URL(`public/${name}`, root))));
 const pixelAssetVersion = createHash('sha256').update(Buffer.concat(pixelAssets)).digest('hex').slice(0, 12);
 const common = {
   PIXEL_ASSET_VERSION: pixelAssetVersion,
-  SCENE_PLAYER: await readFile(new URL('src/scenery.html', root), 'utf8'),
   PROFILE_AVATAR: escape(safeUrl(github.profile.avatar)),
   PROFILE_BIO: escape(github.profile.bio || '백엔드 개발자 김동규의 프로젝트와 개발 기록.'),
   REPO_COUNT: String(github.repositories.length),
@@ -120,10 +119,18 @@ await mkdir(output, { recursive: true });
 // Remove only generated HTML files in this project's output before rebuilding.
 for (const filename of await readdir(output)) if (filename.endsWith('.html')) await unlink(new URL(filename, output));
 await cp(new URL('public/', root), output, { recursive: true });
-const [homeTemplate, articleTemplate] = await Promise.all(['home', 'article'].map(name => readFile(new URL(`src/${name}.html`, root), 'utf8')));
-let home = fill(homeTemplate, { ...common, REPOSITORIES: repositories(), CONTRIBUTIONS: contributions(), ACTIVITY: activity(), POSTS: postCards() });
+const [homeTemplate, articleTemplate, blogTemplate] = await Promise.all(['home', 'article', 'blog'].map(name => readFile(new URL(`src/${name}.html`, root), 'utf8')));
+let home = fill(homeTemplate, { ...common, REPOSITORIES: repositories(), CONTRIBUTIONS: contributions(), ACTIVITY: activity() });
 if (includeDrafts) home = home.replace('</head>', '<meta name="robots" content="noindex"></head>');
 await writeFile(new URL('index.html', output), home);
+let blog = fill(blogTemplate, {
+  ...common,
+  POSTS: postCards(),
+  POST_COUNT: String(posts.length),
+  BLOG_PREVIEW_NOTICE: includeDrafts ? '<p class="blog-preview-notice">미리보기 · 검수 전 초안을 포함한 목록입니다. 초안은 공개 사이트에 표시되지 않습니다.</p>' : '',
+});
+if (includeDrafts) blog = blog.replace('</head>', '<meta name="robots" content="noindex"></head>');
+await writeFile(new URL('blog.html', output), blog);
 for (const post of posts) {
   if (!/^[a-z0-9-]+$/.test(post.slug)) throw new Error('글 주소에는 영문 소문자, 숫자, 하이픈만 사용할 수 있습니다.');
   const source = await readFile(new URL(`content/${post.source}`, root), 'utf8');
