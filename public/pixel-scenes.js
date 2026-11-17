@@ -21,6 +21,140 @@
   const raindrops = points(63, 150)
   const snowflakes = points(317, 143)
   const petals = points(37, 42)
+  const cityStars = points(921, 24)
+  const roofStars = points(922, 39)
+  const observatoryStars = points(923, 61)
+  const sunGlints = points(924, 82)
+  const neonGlints = points(925, 76)
+  const groundRipples = points(926, 27)
+  const cityTrainCars = [51, 51, 51]
+  const forestTrainCars = [51, 46, 46]
+  const foregroundPosts = [24, 152, 282, 412, 542]
+  const locomotiveWheels = [156, 169, 180]
+
+  function mask(vertices) {
+    const path = new Path2D()
+    path.moveTo(vertices[0][0], vertices[0][1])
+    for (let index = 1; index < vertices.length; index += 1) path.lineTo(vertices[index][0], vertices[index][1])
+    path.closePath()
+    return path
+  }
+
+  const cityWater = mask([[0, 244], [640, 244], [640, 326], [0, 326]])
+  for (const bridgePier of [71, 232, 399, 566]) cityWater.rect(bridgePier - 5, 244, 24, 36)
+  const lakeWater = mask([[143, 215], [640, 215], [640, 308], [548, 313], [541, 360], [145, 360]])
+  const seaWater = mask([[0, 219], [96, 219], [96, 201], [287, 201], [256, 258], [228, 297],
+    [193, 322], [112, 326], [112, 360], [0, 360]])
+  const riverWater = mask([[210, 202], [370, 202], [370, 222], [574, 222], [574, 281], [472, 295],
+    [327, 297], [217, 279], [210, 267]])
+  const harborWater = mask([[346, 199], [640, 199], [640, 360], [0, 360], [0, 340], [189, 272],
+    [240, 261], [333, 245]])
+  const wetGround = mask([[219, 254], [403, 249], [640, 337], [640, 360], [0, 360], [0, 335]])
+  const roofSky = new Path2D()
+  roofSky.rect(0, 0, width, 100)
+  roofSky.moveTo(449, 103)
+  roofSky.arc(392, 103, 57, 0, Math.PI * 2)
+
+  function twinkle(ctx, time, field, top, bottom, color) {
+    ctx.save()
+    for (let index = 0; index < field.length; index += 1) {
+      const point = field[index]
+      const phase = time * (.42 + point[0] * .32) + point[1] * 38
+      const intensity = .5 + Math.sin(phase) * .5
+      const x = 8 + point[0] * 623
+      const y = top + point[1] * (bottom - top)
+      ctx.globalAlpha = .16 + intensity * .72
+      box(ctx, color, x, y, 1, 1)
+      if (index % 17 === 0) {
+        ctx.globalAlpha = Math.max(0, intensity - .72) * 1.9
+        box(ctx, color, x - 2, y, 5, 1)
+        box(ctx, color, x, y - 2, 1, 5)
+      }
+    }
+    ctx.restore()
+  }
+
+  function pixelGlow(ctx, x, y, rx, ry, color, opacity) {
+    ctx.save()
+    for (let ring = 5; ring > 0; ring -= 1) {
+      ctx.globalAlpha = opacity * (6 - ring) / 15
+      disc(ctx, color, x, y, rx * ring / 5, ry * ring / 5, 2)
+    }
+    ctx.restore()
+  }
+
+  function reflectedHorizon(ctx, source, time, area, shoreline, depth, opacity) {
+    ctx.save()
+    ctx.clip(area, 'evenodd')
+    ctx.globalAlpha = opacity
+    ctx.imageSmoothingEnabled = false
+    for (let row = 3; row < depth; row += 3) {
+      const sourceY = shoreline - Math.floor(row * .68)
+      const offset = Math.round(Math.sin(row * .31 + time * .62) * (1 + row * .022))
+      ctx.drawImage(source, 0, sourceY, width, 2, offset, shoreline + row, width, 2)
+    }
+    ctx.restore()
+  }
+
+  function waterLight(ctx, time, area, x, top, depth, spread, color, field, opacity = .7) {
+    ctx.save()
+    ctx.clip(area, 'evenodd')
+    for (let index = 0; index < field.length; index += 1) {
+      const point = field[index]
+      const distance = point[1]
+      const phase = time * .8 + point[0] * 29 + distance * 17
+      const reach = 1 + distance * 19
+      const y = top + distance * depth
+      ctx.globalAlpha = opacity * (.3 + .7 * Math.sin(phase) ** 2)
+      box(ctx, color, x + (point[0] - .5) * spread * (.2 + distance) + Math.sin(phase) * 3,
+        y, reach * (.25 + point[0]), 1)
+    }
+    ctx.restore()
+  }
+
+  function objectReflection(ctx, time, area, x, top, w, objectHeight, opacity) {
+    ctx.save()
+    ctx.clip(area, 'evenodd')
+    ctx.globalAlpha = opacity
+    for (let row = 0; row < objectHeight; row += 3) {
+      const drift = Math.round(Math.sin(row * .34 + time * 1.3) * (1 + row * .05))
+      ctx.drawImage(ctx.canvas, Math.round(x), Math.round(top - row - 2), w, 2,
+        Math.round(x + drift), Math.round(top + row * .65 + 4), w, 1)
+    }
+    ctx.restore()
+  }
+
+  function lakeWake(ctx, time, x, y) {
+    for (let index = 1; index <= 12; index += 1) {
+      const age = index * .34
+      const earlier = 303 + Math.sin((time - age) / 11) * 94
+      const direction = Math.cos((time - age) / 11) >= 0 ? 1 : -1
+      const start = earlier - direction * 20
+      ctx.globalAlpha = (1 - index / 13) * .58
+      box(ctx, '#d0ead6', start - index * .32, y + 10 + index * .9, 6 + index * .9, 1)
+      box(ctx, '#b6ddd0', start - index * .32, y + 4 - index * .8, 4 + index * .7, 1)
+    }
+    ctx.globalAlpha = 1
+  }
+
+  function rainRings(ctx, time) {
+    ctx.save()
+    ctx.clip(wetGround)
+    for (let index = 0; index < groundRipples.length; index += 1) {
+      const point = groundRipples[index]
+      const phase = (time * .49 + point[0] * 12) % 1
+      const x = 12 + point[0] * 616
+      const y = 270 + point[1] * 88
+      const radius = (2 + phase * 11) * (.4 + point[1] * .6)
+      ctx.globalAlpha = (1 - phase) * .56
+      for (let angle = 0; angle < 24; angle += 1) {
+        const radians = angle * Math.PI / 12
+        box(ctx, index % 3 === 0 ? '#c6a7d6' : '#8bd4d2', x + Math.cos(radians) * radius,
+          y + Math.sin(radians) * radius * .28, 1, 1)
+      }
+    }
+    ctx.restore()
+  }
 
   function box(ctx, color, x, y, w, h) {
     ctx.fillStyle = color
@@ -179,6 +313,15 @@
     shape(ctx, light, [[x, y - size * 0.94], [x - size * 0.10, y - size * 0.62],
       [x - size * 0.03, y - size * 0.66], [x - size * 0.22, y - size * 0.39], [x - size * 0.07, y - size * 0.46],
       [x - size * 0.30, y - size * 0.19], [x - size * 0.01, y - size * 0.23]])
+    if (size > 35) {
+      for (let branch = 2; branch < 9; branch += 1) {
+        const distance = branch / 10
+        const reach = size * distance * .27
+        pixelLine(ctx, light, x - reach, y - size + size * distance, x - 2, y - size + size * distance - 3)
+        box(ctx, shade, x + 2, y - size + size * distance + 2, reach * .65, 1)
+      }
+      box(ctx, light, x - size * .04, y - size * .20, 1, size * .15)
+    }
   }
 
   function buildings(ctx, base, seed, min, max, colors, windowColors, gap) {
@@ -190,6 +333,16 @@
       const color = colors[Math.floor(rand() * colors.length)]
       box(ctx, color, x, y, w, h)
       box(ctx, colors[0], x + w - Math.floor(w / 5), y + 3, Math.floor(w / 5), h - 3)
+      box(ctx, colors[colors.length - 1], x, y, 1, h)
+      box(ctx, colors[1], x, y, w, 1)
+      for (let floor = y + 6; floor < base; floor += 14) {
+        box(ctx, colors[0], x + 1, floor, w - 2, 1)
+      }
+      if (w > 27 && h > 42) {
+        box(ctx, colors[0], x + 6, y - 4, 12, 5)
+        box(ctx, colors[1], x + 7, y - 5, 10, 1)
+        box(ctx, colors[0], x + w - 11, y - 9, 5, 9)
+      }
       if (h > max * 0.68) {
         box(ctx, color, x + 4, y - 6, w - 10, 6)
         if (rand() < 0.42) {
@@ -199,7 +352,15 @@
       }
       for (let wy = y + 7; wy < base - 5; wy += 7) {
         for (let wx = x + 4; wx < x + w - 7; wx += 6) {
-          if (rand() > 0.54) box(ctx, windowColors[Math.floor(rand() * windowColors.length)], wx, wy, 3, 2)
+          if (rand() > 0.54) {
+            const glow = windowColors[Math.floor(rand() * windowColors.length)]
+            ctx.globalAlpha = .16
+            box(ctx, glow, wx - 1, wy - 1, 5, 4)
+            ctx.globalAlpha = 1
+            box(ctx, colors[0], wx - 1, wy, 5, 3)
+            box(ctx, glow, wx, wy, 3, 2)
+            box(ctx, colors[1], wx - 1, wy + 3, 5, 1)
+          }
         }
       }
       x += w + gap + Math.floor(rand() * 6)
@@ -226,6 +387,121 @@
     }
   }
 
+  function cachedSprite(w, h, paint) {
+    let canvas
+    return {
+      draw(ctx, x, y, drawWidth = w, drawHeight = h) {
+        if (!canvas) {
+          canvas = document.createElement('canvas')
+          canvas.width = w
+          canvas.height = h
+          paint(canvas.getContext('2d'))
+        }
+        ctx.imageSmoothingEnabled = false
+        ctx.drawImage(canvas, Math.round(x), Math.round(y), Math.round(drawWidth), Math.round(drawHeight))
+      },
+    }
+  }
+
+  const sailingBoat = cachedSprite(68, 58, (ctx) => {
+    shape(ctx, '#724b43', [[1, 45], [65, 45], [54, 55], [11, 55]])
+    box(ctx, '#d79c6c', 5, 47, 56, 3)
+    box(ctx, '#f6c592', 8, 46, 51, 1)
+    box(ctx, '#a37157', 16, 51, 36, 1)
+    box(ctx, '#755d4f', 31, 1, 2, 48)
+    shape(ctx, '#f4e6bf', [[29, 2], [29, 41], [5, 41]])
+    shape(ctx, '#eee1ac', [[34, 8], [57, 38], [34, 38]])
+    pixelLine(ctx, '#ffedd0', 28, 10, 8, 40)
+  })
+  const umbrella = cachedSprite(60, 22, (ctx) => {
+    shape(ctx, '#8e586d', [[0, 17], [8, 6], [22, 1], [36, 1], [51, 7], [57, 18], [41, 15], [28, 18], [14, 15]], 1)
+    shape(ctx, '#d18a93', [[6, 10], [20, 2], [34, 2], [43, 6], [28, 5], [19, 9]], 1)
+    pixelLine(ctx, '#e6acb0', 22, 2, 8, 14)
+    pixelLine(ctx, '#c18a9d', 28, 3, 28, 16)
+  })
+  const coastalCar = cachedSprite(40, 25, (ctx) => {
+    shape(ctx, '#bd5263', [[1, 18], [8, 6], [25, 4], [35, 11], [39, 21], [0, 21]], 1)
+    box(ctx, '#754b65', 10, 9, 17, 5)
+    box(ctx, '#ecad9e', 11, 7, 14, 1)
+    box(ctx, '#ffba91', 2, 17, 6, 2)
+    box(ctx, '#ffba91', 30, 17, 6, 2)
+    box(ctx, '#e18579', 9, 20, 21, 1)
+    box(ctx, '#352940', 5, 22, 7, 3)
+    box(ctx, '#352940', 29, 22, 7, 3)
+  })
+  const rooftopCat = cachedSprite(40, 33, (ctx) => {
+    shape(ctx, '#171a2c', [[3, 27], [4, 18], [10, 11], [17, 13], [22, 19], [22, 27], [30, 28], [30, 31], [0, 30]], 1)
+    box(ctx, '#171a2c', 3, 7, 12, 10)
+    shape(ctx, '#171a2c', [[3, 10], [3, 1], [8, 6], [10, 7], [15, 2], [16, 10]], 1)
+    box(ctx, '#b7a8c5', 5, 10, 2, 1)
+    pixelLine(ctx, '#79708a', 4, 3, 7, 6)
+    pixelLine(ctx, '#595670', 11, 12, 18, 16)
+  })
+  const fishingBoat = cachedSprite(110, 57, (ctx) => {
+    shape(ctx, '#595f71', [[1, 41], [98, 41], [106, 34], [99, 52], [15, 52]])
+    box(ctx, '#bd756e', 6, 44, 96, 5)
+    box(ctx, '#dfd1b8', 38, 18, 40, 23)
+    box(ctx, '#9d7971', 34, 14, 48, 4)
+    box(ctx, '#67848d', 45, 23, 10, 7)
+    box(ctx, '#67848d', 59, 23, 10, 7)
+    box(ctx, '#606e76', 35, 2, 2, 39)
+    pixelLine(ctx, '#8f8984', 37, 9, 80, 34)
+    box(ctx, '#f0dfbf', 39, 19, 37, 1)
+    box(ctx, '#e6c0a1', 14, 44, 72, 1)
+  })
+
+  function palm(ctx, x, y, size) {
+    const crownX = x + size * .10
+    const crownY = y - size
+    for (let step = 0; step < size; step += 3) {
+      const bend = Math.sin(step / size * 1.5) * size * .1
+      box(ctx, '#39263d', x + bend, y - step, Math.max(2, size * .075 - step * .03), 3)
+      if (step % 9 === 0) box(ctx, '#86536b', x + bend, y - step, 2, 1)
+    }
+    const fronds = [[-.70, .20, -.40, -.36], [-.61, -.10, -.31, -.42],
+      [-.40, -.36, -.18, -.50], [-.15, -.49, -.03, -.55], [.16, -.42, .06, -.53],
+      [.43, -.29, .26, -.45], [.69, -.03, .41, -.37], [.72, .22, .45, -.24],
+      [.53, .42, .39, -.09], [-.48, .43, -.40, -.03]]
+    for (let leaf = 0; leaf < fronds.length; leaf += 1) {
+      const frond = fronds[leaf]
+      const endX = crownX + frond[0] * size
+      const endY = crownY + frond[1] * size
+      const archX = crownX + frond[2] * size
+      const archY = crownY + frond[3] * size
+      let previousX = crownX
+      let previousY = crownY
+      for (let segment = 1; segment <= 18; segment += 1) {
+        const part = segment / 18
+        const remaining = 1 - part
+        const leafX = remaining ** 2 * crownX + 2 * remaining * part * archX + part ** 2 * endX
+        const leafY = remaining ** 2 * crownY + 2 * remaining * part * archY + part ** 2 * endY
+        pixelLine(ctx, '#2c2037', previousX, previousY, leafX, leafY, part < .35 ? 2 : 1)
+        if (leaf < 5 && segment < 12) pixelLine(ctx, '#89506b', previousX, previousY - 1, leafX, leafY - 1)
+        const tangentX = remaining * (archX - crownX) + part * (endX - archX)
+        const tangentY = remaining * (archY - crownY) + part * (endY - archY)
+        const magnitude = Math.hypot(tangentX, tangentY) || 1
+        const directionX = tangentX / magnitude
+        const directionY = tangentY / magnitude
+        const featherLength = Math.sin(part * Math.PI) ** .7 * size * (.10 + leaf % 3 * .01)
+        for (let side = -1; side <= 1; side += 2) {
+          const tipX = leafX + (-directionY * side + directionX * .42) * featherLength
+          const tipY = leafY + (directionX * side + directionY * .42) * featherLength + size * .018
+          const bendX = leafX * .4 + tipX * .6 - directionX * featherLength * .12
+          const bendY = leafY * .4 + tipY * .6 - size * .008
+          const shade = side < 0 ? '#37213f' : '#472640'
+          pixelLine(ctx, shade, leafX, leafY, bendX, bendY, part < .6 ? 2 : 1)
+          pixelLine(ctx, shade, bendX, bendY, tipX, tipY)
+          if (leaf < 4 && side < 0 && segment % 3 === 0) {
+            pixelLine(ctx, '#9e6078', leafX, leafY - 1, bendX, bendY - 1)
+          }
+        }
+        previousX = leafX
+        previousY = leafY
+      }
+    }
+    box(ctx, '#37283e', crownX - 2, crownY + 1, 5, 5)
+  }
+
   function scene(id, name, accent, background, foreground) {
     let layer
     return {
@@ -238,13 +514,13 @@
           background(layer.getContext('2d'))
         }
         ctx.drawImage(layer, 0, 0)
-        foreground(ctx, timeSeconds)
+        foreground(ctx, timeSeconds, layer)
       },
     }
   }
 
   const city = scene('night-city', '도시의 밤', '#eab2cc', (ctx) => {
-    sky(ctx, ['#20213e', '#29264a', '#383054', '#4b395e', '#694668', '#84526a', '#ab646e', '#cb7a7e'], 228, 101)
+    sky(ctx, ['#171c3c', '#23224d', '#322957', '#513362', '#753d6b', '#974b75', '#ba627c', '#d57b87'], 228, 101)
     stars(ctx, 401, 90, 122, ['#817696', '#b294ac', '#e4b7bf'])
     stripedSun(ctx, 475, 127, 33, '#efb6a3', '#d18a8a')
     cloud(ctx, 104, 133, 88, '#9a5b74', '#774d70')
@@ -257,6 +533,7 @@
       [346, 150, 'HOTEL', '#f7a7bc', '#8c4c74'], [528, 179, 'CAFE', '#ffb87f', '#88565e']]) {
       const w = label.length * 6 + 10
       box(ctx, edge, x - 4, y - 3, w + 8, 22)
+      pixelGlow(ctx, x + w / 2, y + 9, w + 15, 26, light, .22)
       box(ctx, light, x, y, w, 15)
       box(ctx, '#292642', x + 1, y + 1, w - 2, 13)
       pixelText(ctx, label, x + 4, y + 3, light)
@@ -286,15 +563,30 @@
       box(ctx, '#28263f', x, 223, 2, 6)
       box(ctx, '#da9688', x, 222, 2, 2)
     }
-  }, (ctx, time) => {
+  }, (ctx, time, layer) => {
+    twinkle(ctx, time, cityStars, 8, 62, '#d7beda')
+    ctx.globalAlpha = .18 + Math.sin(time * .48 + 1.7) * .055
+    box(ctx, '#a3f3e1', 101, 171, 28, 1)
+    ctx.globalAlpha = .20 + Math.sin(time * .39 + 3.1) * .07
+    box(ctx, '#ffc0d2', 346, 150, 40, 1)
+    ctx.globalAlpha = .14 + Math.sin(time * .44 + .7) * .06
+    box(ctx, '#ffd1a6', 528, 179, 34, 1)
+    ctx.globalAlpha = 1
+    reflectedHorizon(ctx, layer, time, cityWater, 226, 110, .19)
+    waterLight(ctx, time, cityWater, 114, 246, 82, 44, '#67c9d0', neonGlints, .56)
+    waterLight(ctx, time + 2, cityWater, 366, 246, 82, 57, '#dd85c1', neonGlints, .58)
+    waterLight(ctx, time + 4, cityWater, 546, 246, 82, 57, '#f5b48d', neonGlints, .61)
+    ctx.save()
+    ctx.clip(cityWater, 'evenodd')
     sparkleWater(ctx, time, 255, 104, '#b87c86', cityRipples)
+    ctx.restore()
     const x = (412 + time * 34) % 835 - 176
-    railcar(ctx, x, 208, [51, 51, 51], '#a67581', '#6f4d6e', '#ffc88f')
+    railcar(ctx, x, 208, cityTrainCars, '#a67581', '#6f4d6e', '#ffc88f')
     box(ctx, '#ffe7ac', x + 157, 215, 2, 2)
     box(ctx, '#f47280', x + 1, 216, 2, 2)
     box(ctx, '#161b30', 0, 339, 640, 6)
     box(ctx, '#665064', 0, 338, 640, 2)
-    for (const post of [24, 152, 282, 412, 542]) {
+    for (const post of foregroundPosts) {
       box(ctx, '#161b30', post, 327, 6, 33)
       box(ctx, '#8b5c70', post, 326, 7, 2)
     }
@@ -348,26 +640,23 @@
       pixelLine(ctx, '#376b61', x, y, x - 6 + reed % 10, y - top)
       if (reed % 3 === 0) box(ctx, '#9d9464', x - 7 + reed % 10, y - top - 3, 3, 5)
     }
-  }, (ctx, time) => {
+  }, (ctx, time, layer) => {
+    reflectedHorizon(ctx, layer, time, lakeWater, 205, 114, .25)
+    ctx.save()
+    ctx.clip(lakeWater)
     sparkleWater(ctx, time, 218, 138, '#b7dfd1', lakeRipples)
     const x = 303 + Math.sin(time / 11) * 94
     const y = 260 + Math.sin(time * 2.1) * 1.3
-    for (let wave = 0; wave < 6; wave += 1) {
-      box(ctx, wave % 2 ? '#90c8bd' : '#c0e4d4', x - 36 - wave * 7, y + 7 + wave * 3, 23 - wave * 2, 1)
-    }
-    shape(ctx, '#724b43', [[x - 26, y], [x + 38, y], [x + 27, y + 10], [x - 16, y + 10]])
-    box(ctx, '#d79c6c', x - 22, y + 2, 56, 3)
-    box(ctx, '#f6c592', x - 19, y + 1, 51, 1)
-    box(ctx, '#a37157', x - 11, y + 6, 36, 1)
-    box(ctx, '#755d4f', x + 4, y - 44, 2, 48)
-    shape(ctx, '#f4e6bf', [[x + 2, y - 43], [x + 2, y - 4], [x - 22, y - 4]])
-    shape(ctx, '#eee1ac', [[x + 7, y - 37], [x + 30, y - 7], [x + 7, y - 7]])
-    pixelLine(ctx, '#ffedd0', x + 1, y - 35, x - 19, y - 5)
+    lakeWake(ctx, time, x, y)
+    sailingBoat.draw(ctx, x - 27, y - 45)
     box(ctx, '#b77363', x + 6, y - 44, 12 + Math.sin(time * 4) * 2, 4)
+    objectReflection(ctx, time, lakeWater, x - 27, y + 10, 66, 53, .28)
+    ctx.restore()
   })
 
   const coast = scene('sunset-drive', '해안 드라이브', '#f4a17e', (ctx) => {
-    sky(ctx, ['#5d527b', '#775779', '#9b617d', '#c17583', '#dd8c87', '#efa67f', '#ffca91', '#ffdb9f'], 198, 13)
+    sky(ctx, ['#51426f', '#73507d', '#a25c83', '#c97088', '#e88e89', '#f5a37f', '#ffd091', '#ffe3a5'], 198, 13)
+    pixelGlow(ctx, 168, 143, 82, 61, '#ffc594', .18)
     stripedSun(ctx, 168, 143, 49, '#ffe9b1', '#eeaa86')
     cloud(ctx, 65, 76, 55, '#cf8791', '#9e6c89')
     cloud(ctx, 498, 126, 100, '#eda68d', '#d7888c')
@@ -385,6 +674,15 @@
     shape(ctx, '#81576f', [[640, 151], [580, 177], [550, 185], [511, 205], [523, 214], [567, 208], [595, 187], [640, 183]])
     shape(ctx, '#ba7d81', [[640, 194], [597, 203], [578, 223], [542, 235], [553, 246], [584, 238], [616, 218], [640, 222]])
     shape(ctx, '#714c67', [[641, 237], [608, 247], [587, 276], [578, 297], [598, 311], [620, 291], [640, 292]])
+    shape(ctx, '#543150', [[640, 156], [617, 172], [593, 181], [573, 201], [552, 208],
+      [567, 217], [600, 200], [620, 183], [640, 178]])
+    shape(ctx, '#623653', [[640, 230], [613, 241], [599, 263], [584, 283], [583, 294],
+      [600, 300], [614, 276], [640, 263]])
+    pixelLine(ctx, '#da9b8e', 641, 113, 609, 120)
+    pixelLine(ctx, '#c58b85', 609, 120, 580, 143)
+    pixelLine(ctx, '#d39388', 578, 145, 549, 158)
+    pixelLine(ctx, '#bc7f80', 633, 190, 609, 199)
+    pixelLine(ctx, '#be8581', 609, 199, 591, 214)
     shape(ctx, '#a97c80', [[183, 360], [234, 286], [301, 257], [382, 231], [432, 212], [468, 188], [496, 187],
       [498, 200], [460, 229], [417, 251], [357, 284], [335, 311], [315, 360]])
     shape(ctx, '#494254', [[207, 360], [241, 308], [275, 285], [357, 253], [413, 234], [460, 208], [477, 191],
@@ -412,31 +710,29 @@
       if (y > 209 && x < 527 + (y - 209) / 3) continue
       box(ctx, index % 2 ? '#714e6b' : '#be8586', x, y, 3 + rand() * 12, 2)
     }
-    for (const [x, y, size] of [[560, 268, 38], [603, 313, 52], [510, 230, 17]]) {
-      shape(ctx, '#523c53', [[x - 3, y], [x + 2, y - size], [x + 6, y - size], [x + 1, y]])
-      shape(ctx, '#62475e', [[x + 4, y - size], [x + 14, y - size - 12], [x + 25, y - size - 9], [x + 12, y - size - 5],
-        [x + 4, y - size], [x - 15, y - size - 5], [x - 24, y - size + 2], [x - 11, y - size - 8]])
-    }
+    palm(ctx, 558, 270, 57)
+    palm(ctx, 605, 317, 84)
+    palm(ctx, 509, 231, 33)
+    shape(ctx, '#663c63', [[555, 268], [562, 268], [610, 296], [627, 306], [614, 306], [579, 285]])
+    shape(ctx, '#704664', [[603, 316], [610, 316], [640, 332], [640, 340], [626, 331]])
     for (const [x, y, w, h] of [[583, 357, 62, 20], [548, 331, 54, 24], [640, 339, 78, 32], [527, 321, 34, 17], [163, 360, 83, 34]]) {
       rock(ctx, x, y, w, h, '#6f4e65', '#b87f7e')
     }
-  }, (ctx, time) => {
-    for (let line = 0; line < 11; line += 1) {
-      const y = 199 + line * 10
-      const size = 13 + (Math.sin(time * 1.6 + line) + 1) * (7 + line)
-      box(ctx, line % 2 ? '#ffd1a0' : '#e3a28c', 161 - size / 2 + Math.sin(line) * 16, y, size, 1)
+    for (const [x, y, w] of [[493, 278, 29], [523, 296, 35], [548, 311, 23], [568, 335, 31], [614, 354, 34]]) {
+      pixelLine(ctx, '#603b59', x, y, x + w * .75, y - 3)
+      pixelLine(ctx, '#71425d', x + w * .75, y - 3, x + w, y - 8)
+      box(ctx, '#c38a87', x - 2, y - 2, w * .23, 1)
+      box(ctx, '#9b6574', x + 6, y + 3, w * .4, 1)
     }
+  }, (ctx, time) => {
+    waterLight(ctx, time, seaWater, 164, 198, 160, 116, '#ffe3aa', sunGlints, .92)
+    waterLight(ctx, time + 1.8, seaWater, 167, 198, 160, 139, '#f3ac96', neonGlints, .54)
     const progress = Math.min(1, 0.33 + time / 19)
     const x = 481 - progress * 258
     const y = 193 + progress ** 1.37 * 148
     const size = 8 + progress * 26
     disc(ctx, '#383746', x, y + 5, size * 0.69, size * 0.18)
-    shape(ctx, '#bd5263', [[x - size * 0.55, y], [x - size * 0.38, y - size * 0.36], [x + size * 0.16, y - size * 0.42],
-      [x + size * 0.46, y - size * 0.21], [x + size * 0.60, y + 4], [x - size * 0.58, y + 5]], 1)
-    box(ctx, '#754b65', x - size * 0.29, y - size * 0.28, size * 0.53, size * 0.14)
-    box(ctx, '#ffba91', x - size * 0.52, y + 1, size * 0.18, 2)
-    box(ctx, '#ffba91', x + size * 0.34, y + 1, size * 0.18, 2)
-    box(ctx, '#e18579', x - size * .32, y + 2, size * .62, 1)
+    coastalCar.draw(ctx, x - size * .58, y - size * .47, size * 1.18, size * .74)
     gull(ctx, 215 + time * 7, 110 + Math.sin(time * 1.3) * 4, time, '#695577')
     gull(ctx, 247 + time * 5, 126 + Math.sin(time + 2) * 5, time + .5, '#786080')
   })
@@ -447,10 +743,10 @@
     shape(ctx, '#423b54', [[0, 167], [640, 170], [640, 360], [0, 360]])
     shape(ctx, '#57506a', [[242, 216], [388, 214], [576, 360], [72, 360]])
     shape(ctx, '#65556b', [[263, 220], [348, 218], [466, 360], [14, 360]])
-    shape(ctx, '#282a46', [[0, 29], [169, 102], [218, 128], [218, 248], [0, 329]])
-    shape(ctx, '#34304b', [[0, 52], [162, 116], [162, 262], [0, 324]])
-    shape(ctx, '#292b47', [[640, 19], [450, 91], [404, 129], [404, 238], [640, 329]])
-    shape(ctx, '#36324e', [[640, 63], [479, 106], [445, 135], [445, 256], [640, 325]])
+    shape(ctx, '#1e223f', [[0, 29], [169, 102], [218, 128], [218, 248], [0, 329]])
+    shape(ctx, '#29243e', [[0, 52], [162, 116], [162, 262], [0, 324]])
+    shape(ctx, '#1f233f', [[640, 19], [450, 91], [404, 129], [404, 238], [640, 329]])
+    shape(ctx, '#2d2545', [[640, 63], [479, 106], [445, 135], [445, 256], [640, 325]])
     for (const [x, y, w, h] of [[24, 89, 28, 31], [75, 104, 25, 26], [129, 115, 20, 24],
       [477, 124, 21, 22], [556, 96, 30, 28], [610, 78, 30, 42]]) {
       box(ctx, '#242237', x - 2, y - 2, w + 4, h + 4)
@@ -477,6 +773,8 @@
     }
     box(ctx, '#805369', 53, 133, 84, 31)
     box(ctx, '#f2b194', 57, 137, 76, 23)
+    pixelGlow(ctx, 96, 149, 72, 38, '#ff9a8e', .19)
+    box(ctx, '#ffc69b', 57, 137, 76, 1)
     pixelText(ctx, 'RAMEN', 78, 145, '#61445b')
     box(ctx, '#30283f', 499, 183, 113, 81)
     box(ctx, '#456074', 506, 189, 101, 70)
@@ -489,6 +787,8 @@
     }
     box(ctx, '#79b0a9', 527, 139, 88, 24)
     box(ctx, '#41677a', 532, 142, 78, 18)
+    pixelGlow(ctx, 569, 153, 68, 37, '#67ddd1', .19)
+    box(ctx, '#b0f4dc', 532, 142, 78, 1)
     pixelText(ctx, 'RECORDS', 550, 147, '#afdfcb')
     for (const [x, y] of [[202, 190], [235, 184], [424, 186], [452, 178]]) {
       box(ctx, '#53405d', x, y, 16, 37)
@@ -511,7 +811,11 @@
       box(ctx, '#a68195', x - w * .5, y - 1, w * .63, 1)
       box(ctx, '#81667e', x + 3, y + 1, w * .67, 1)
     }
-  }, (ctx, time) => {
+  }, (ctx, time, layer) => {
+    reflectedHorizon(ctx, layer, time, wetGround, 265, 95, .17)
+    waterLight(ctx, time, wetGround, 92, 267, 92, 133, '#f6a59c', neonGlints, .49)
+    waterLight(ctx, time + 2.3, wetGround, 544, 267, 93, 141, '#75d6cd', neonGlints, .48)
+    rainRings(ctx, time)
     const x = 323 + time * 2.9
     const y = 292 - time * 0.5
     disc(ctx, '#53475f', x + 1, y + 20, 19, 5)
@@ -520,10 +824,7 @@
     box(ctx, '#5a4f74', x - 7, y - 10, 13, 15)
     box(ctx, '#a9848b', x - 4, y - 17, 8, 7)
     box(ctx, '#c2a5aa', x + 3, y - 24, 1, 24)
-    shape(ctx, '#8e586d', [[x - 27, y - 22], [x - 19, y - 33], [x - 5, y - 38], [x + 9, y - 38],
-      [x + 24, y - 32], [x + 30, y - 21], [x + 14, y - 24], [x + 1, y - 21], [x - 13, y - 24]], 1)
-    shape(ctx, '#d18a93', [[x - 21, y - 29], [x - 7, y - 37], [x + 7, y - 37], [x + 16, y - 33],
-      [x + 1, y - 34], [x - 8, y - 30]], 1)
+    umbrella.draw(ctx, x - 27, y - 39)
     for (let drop = 0; drop < raindrops.length; drop += 1) {
       const [startX, startY] = raindrops[drop]
       const px = ((startX * width - time * (24 + drop % 8)) % width + width) % width
@@ -572,6 +873,15 @@
       if (y === 249 || y === 250 || y === 257 || y === 258) continue
       box(ctx, ['#836b56', '#a0896a', '#504c48'][stone % 3], rand() * width, y, 1 + rand() * 5, 1)
     }
+    ctx.globalAlpha = .16
+    shape(ctx, '#e8d896', [[136, 98], [151, 101], [335, 239], [301, 239]])
+    shape(ctx, '#f4e7b1', [[145, 99], [157, 103], [398, 241], [372, 242]])
+    ctx.globalAlpha = 1
+    for (const [x, y, reach] of [[26, 279, 124], [112, 278, 63], [522, 278, 78], [604, 285, 137]]) {
+      ctx.globalAlpha = .29
+      shape(ctx, '#345646', [[x - 6, y], [x + 4, y], [x + reach, y + 45], [x + reach * .8, y + 49]])
+      ctx.globalAlpha = 1
+    }
     box(ctx, '#766859', 435, 217, 3, 31)
     box(ctx, '#313a3e', 432, 215, 9, 13)
     box(ctx, '#de9c65', 434, 218, 3, 3)
@@ -590,13 +900,20 @@
     }
   }, (ctx, time) => {
     const x = 185 + time * 24
-    railcar(ctx, x, 224, [51, 46, 46], '#bc634b', '#8d4d45', '#f4d99a')
+    ctx.globalAlpha = .22
+    box(ctx, '#293f35', x + 6, 263, 174, 3)
+    ctx.globalAlpha = 1
+    railcar(ctx, x, 224, forestTrainCars, '#bc634b', '#8d4d45', '#f4d99a')
     box(ctx, '#354850', x + 150, 230, 33, 15)
     box(ctx, '#3e5656', x + 160, 221, 24, 20)
     box(ctx, '#293e49', x + 174, 215, 6, 12)
     box(ctx, '#e9c675', x + 183, 231, 3, 5)
     box(ctx, '#a65d46', x + 150, 241, 36, 3)
-    for (const wheel of [156, 169, 180]) disc(ctx, '#283b41', x + wheel, 246, 4, 4, 1)
+    for (const wheel of locomotiveWheels) disc(ctx, '#283b41', x + wheel, 246, 4, 4, 1)
+    ctx.globalAlpha = .28
+    box(ctx, '#e9c98c', x + 184, 242, 19, 1)
+    box(ctx, '#e9c98c', x + 184, 245, 26, 1)
+    ctx.globalAlpha = 1
     for (let puff = 0; puff < 5; puff += 1) {
       const drift = (puff * 12 + time * 11) % 61
       disc(ctx, puff % 2 ? '#d4d4b3' : '#e6dec1', x + 175 - drift * 1.60, 212 - drift * 0.60,
@@ -647,8 +964,19 @@
     shape(ctx, '#dce0ed', [[0, 318], [150, 296], [266, 306], [408, 288], [531, 296], [640, 286], [640, 360], [0, 360]])
     shape(ctx, '#aaafcf', [[336, 258], [343, 258], [380, 272], [388, 296], [365, 324], [369, 360], [321, 360],
       [328, 334], [352, 305], [370, 290], [365, 277]])
+    ctx.globalAlpha = .27
+    shape(ctx, '#8594b8', [[89, 260], [148, 260], [195, 287], [162, 287]])
+    shape(ctx, '#8899be', [[270, 255], [379, 255], [450, 290], [390, 295]])
+    shape(ctx, '#8294b8', [[475, 246], [539, 246], [589, 272], [552, 276]])
+    shape(ctx, '#7b8dad', [[18, 301], [27, 301], [105, 341], [87, 344]])
+    shape(ctx, '#7b8dad', [[554, 305], [564, 305], [631, 338], [612, 340]])
+    ctx.globalAlpha = 1
     shape(ctx, '#e7d2cb', [[348, 250], [359, 248], [378, 268], [400, 275], [382, 281], [354, 276]])
     shape(ctx, '#e1d3d9', [[278, 256], [294, 253], [323, 266], [333, 273], [293, 269]])
+    pixelGlow(ctx, 304, 263, 37, 12, '#ffbd82', .41)
+    pixelGlow(ctx, 352, 266, 33, 13, '#ffc68b', .45)
+    pixelGlow(ctx, 108, 265, 21, 8, '#ffd4a0', .34)
+    pixelGlow(ctx, 493, 251, 23, 9, '#ffcd97', .35)
     cabin(ctx, 89, 261, 59, '#a57e88', '#716679', '#fbd6a7')
     cabin(ctx, 268, 255, 111, '#9c707b', '#60566c', '#ffce96')
     cabin(ctx, 475, 246, 63, '#8c7387', '#615972', '#f5cca2')
@@ -688,6 +1016,7 @@
   const roof = scene('moonlit-roof', '달빛 옥상', '#c0bbef', (ctx) => {
     box(ctx, '#644963', 0, 0, width, height)
     sky(ctx, ['#1c213c', '#222743', '#292b4a', '#333251', '#3f395a', '#504061', '#644963'], 255, 826)
+    pixelGlow(ctx, 392, 103, 79, 77, '#b9addb', .17)
     stars(ctx, 54, 127, 184, ['#727393', '#9a95b4', '#cfc1d3'])
     disc(ctx, '#d6cbe4', 392, 103, 54)
     disc(ctx, '#e8d9e9', 387, 97, 47)
@@ -732,19 +1061,17 @@
       box(ctx, '#30334a', x + 4, y + 2, w * .72, 1)
     }
   }, (ctx, time) => {
+    ctx.save()
+    ctx.clip(roofSky, 'evenodd')
+    twinkle(ctx, time, roofStars, 7, 75, '#e3d5ef')
+    ctx.restore()
     const x = 331
     const y = 260
     const tail = Math.sin(time * 2.1) * 3
-    shape(ctx, '#171a2c', [[x - 13, y], [x - 12, y - 9], [x - 6, y - 16], [x + 1, y - 14], [x + 6, y - 8],
-      [x + 6, y], [x + 14, y + 1], [x + 14, y + 4], [x - 16, y + 3]], 1)
-    box(ctx, '#171a2c', x - 13, y - 20, 12, 10)
-    shape(ctx, '#171a2c', [[x - 13, y - 17], [x - 13, y - 26], [x - 8, y - 21], [x - 6, y - 20],
-      [x - 1, y - 25], [x, y - 17]], 1)
-    shape(ctx, '#171a2c', [[x + 8, y + 1], [x + 16, y], [x + 22, y - 5], [x + 24, y - 12 + tail], [x + 27, y - 12 + tail],
-      [x + 26, y - 3], [x + 19, y + 4], [x + 9, y + 4]], 1)
-    box(ctx, '#b7a8c5', x - 11, y - 17, 2, 1)
-    pixelLine(ctx, '#79708a', x - 12, y - 24, x - 9, y - 21)
-    pixelLine(ctx, '#595670', x - 5, y - 15, x + 2, y - 11)
+    rooftopCat.draw(ctx, x - 16, y - 27)
+    pixelLine(ctx, '#171a2c', x + 8, y + 1, x + 18, y + 1, 3)
+    pixelLine(ctx, '#171a2c', x + 18, y + 1, x + 24, y - 5, 3)
+    pixelLine(ctx, '#171a2c', x + 24, y - 5, x + 25, y - 12 + tail, 3)
     if (Math.floor(time * 2) % 4 < 2) box(ctx, '#ce7e9b', 119, 202, 2, 2)
   })
 
@@ -801,6 +1128,11 @@
     shape(ctx, '#bd9faa', [[0, 291], [117, 280], [218, 300], [344, 324], [484, 319], [640, 298], [640, 360], [0, 360]])
     shape(ctx, '#d3b8bd', [[0, 310], [112, 295], [217, 317], [345, 341], [490, 337], [640, 316], [640, 342], [485, 360],
       [345, 360], [216, 340], [108, 318], [0, 331]])
+    ctx.globalAlpha = .28
+    shape(ctx, '#966f91', [[86, 299], [96, 300], [241, 333], [289, 352], [242, 349], [157, 325]])
+    shape(ctx, '#8d7197', [[580, 307], [592, 309], [640, 341], [640, 357], [599, 333]])
+    shape(ctx, '#a0829e', [[171, 292], [178, 293], [263, 315], [287, 325], [261, 322]])
+    ctx.globalAlpha = 1
     for (const [x, y, w] of [[16, 315, 44], [124, 310, 31], [197, 322, 54], [298, 343, 42], [386, 352, 30], [490, 344, 55], [577, 336, 32]]) {
       pixelLine(ctx, '#b392a5', x, y, x + w, y + 2)
       box(ctx, '#e5c5c9', x + 3, y + 4, w * .72, 1)
@@ -816,8 +1148,12 @@
     for (let index = 0; index < 112; index += 1) {
       box(ctx, ['#eac6cc', '#ca93ad', '#b68ba2'][index % 3], rand() * width, 303 + rand() * 57, 2 + rand() * 4, 1)
     }
-  }, (ctx, time) => {
+  }, (ctx, time, layer) => {
+    reflectedHorizon(ctx, layer, time, riverWater, 197, 98, .22)
+    ctx.save()
+    ctx.clip(riverWater, 'evenodd')
     sparkleWater(ctx, time, 211, 55, '#d2c1d3', riverRipples)
+    ctx.restore()
     for (let index = 0; index < petals.length; index += 1) {
       const [startX, startY] = petals[index]
       const x = (startX * width + time * (7 + index % 6) + Math.sin(index + time) * 7 + width) % width
@@ -828,6 +1164,8 @@
 
   const observatory = scene('star-observatory', '별빛 관측소', '#adb9f2', (ctx) => {
     sky(ctx, ['#131831', '#191e3a', '#222646', '#2d2c51', '#3c355e', '#503e66', '#6d4d70'], 266, 63)
+    pixelGlow(ctx, 255, 143, 119, 33, '#7e609e', .1)
+    pixelGlow(ctx, 458, 91, 97, 31, '#546999', .11)
     const rand = random(328)
     for (let index = 0; index < 1039; index += 1) {
       const x = rand() * width
@@ -887,6 +1225,7 @@
       box(ctx, '#ffc592', x - 1, y, 4, 2)
     }
   }, (ctx, time) => {
+    twinkle(ctx, time, observatoryStars, 8, 135, '#e5daf2')
     const phase = (time + 0.7) % 6.7
     if (phase < 1.8) {
       const x = 521 - phase * 97
@@ -906,8 +1245,10 @@
 
   function gull(ctx, x, y, time, color) {
     const lift = Math.round(Math.sin(time * 4.7) * 3)
-    shape(ctx, color, [[x - 12, y - lift - 2], [x - 6, y - lift - 2], [x, y], [x + 6, y - lift - 2],
-      [x + 13, y - lift - 1], [x + 7, y - lift], [x, y + 2], [x - 7, y - lift]], 1)
+    pixelLine(ctx, color, x - 12, y - lift - 2, x - 6, y - lift - 2)
+    pixelLine(ctx, color, x - 6, y - lift - 2, x, y + 1, 2)
+    pixelLine(ctx, color, x, y + 1, x + 6, y - lift - 2, 2)
+    pixelLine(ctx, color, x + 6, y - lift - 2, x + 13, y - lift - 1)
   }
 
   const harbor = scene('morning-harbor', '아침 항구', '#f3c49a', (ctx) => {
@@ -972,22 +1313,19 @@
       pixelLine(ctx, '#9a806a', board * 16, 296 - board * 3.4, board * 16 + 26, 316 - board * 5)
     }
     pixelLine(ctx, '#847260', 22, 291, 147, 252, 1)
-  }, (ctx, time) => {
+  }, (ctx, time, layer) => {
+    reflectedHorizon(ctx, layer, time, harborWater, 196, 149, .22)
+    waterLight(ctx, time, harborWater, 446, 200, 153, 126, '#fff0c1', sunGlints, .76)
+    ctx.save()
+    ctx.clip(harborWater)
     sparkleWater(ctx, time, 242, 117, '#dce0c1', harborRipples)
     const x = 398 + Math.sin(time / 10) * 59
     const y = 261 + Math.sin(time * 2.1) * 2
-    shape(ctx, '#595f71', [[x - 53, y], [x + 44, y], [x + 52, y - 7], [x + 45, y + 11], [x - 39, y + 11]])
-    box(ctx, '#bd756e', x - 48, y + 3, 96, 5)
-    box(ctx, '#dfd1b8', x - 16, y - 23, 40, 23)
-    box(ctx, '#9d7971', x - 20, y - 27, 48, 4)
-    box(ctx, '#67848d', x - 9, y - 18, 10, 7)
-    box(ctx, '#67848d', x + 5, y - 18, 10, 7)
-    box(ctx, '#606e76', x - 19, y - 39, 2, 39)
+    fishingBoat.draw(ctx, x - 54, y - 41)
     box(ctx, '#b76865', x - 17, y - 38, 12, 5)
-    pixelLine(ctx, '#8f8984', x - 17, y - 32, x + 26, y - 7)
-    box(ctx, '#f0dfbf', x - 15, y - 22, 37, 1)
-    box(ctx, '#e6c0a1', x - 40, y + 3, 72, 1)
     for (let wave = 0; wave < 5; wave += 1) box(ctx, '#b5d2c7', x - 54 - wave * 12, y + 10 + wave * 2, 21 - wave * 2, 1)
+    objectReflection(ctx, time, harborWater, x - 54, y + 11, 108, 50, .28)
+    ctx.restore()
     gull(ctx, 195 + time * 8, 124 + Math.sin(time) * 9, time, '#657f88')
     gull(ctx, 225 + time * 9.4, 104 + Math.sin(time + 0.8) * 8, time + 0.3, '#687f89')
     gull(ctx, 533 - time * 6, 141 + Math.sin(time + 1) * 7, time + 0.7, '#73858b')
