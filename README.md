@@ -23,6 +23,12 @@ npm run preview
 
 표와 Mermaid 다이어그램을 지원한다. HTML 파일은 빌드할 때 생성하므로 직접 수정하지 않는다. 현재 재고 동시성 글은 커머스 저장소에서 가져온 미검수 사본이다. 커머스 원본의 변경을 자동으로 가져오는 연결은 아직 없으며, 공개하기 전에 최신 원본과 대조한다.
 
+## 픽셀 배경
+
+서로 다른 풍경 10개를 Canvas로 그린다. 재생 중에는 10초마다 풍경이 바뀐다. 풍경 그림 바로 아래 조작부에서 정지하거나 원하는 풍경을 고를 수 있다. 정지하면 풍경 전환과 배·기차 등의 움직임이 모두 멈춘다. 기기의 동작 줄이기 설정이 켜져 있으면 정지 상태로 시작하고, 다른 탭을 보는 동안에는 재생 시간을 세지 않는다.
+
+풍경은 `public/pixel-scenes.js`, 재생 동작은 `public/scene-player.js`, 테두리·색상은 `public/pixel-theme.css`에서 수정한다. 풍경과 별개로 글과 메뉴는 불투명한 패널에 표시한다.
+
 ## GitHub 정보
 
 `npm run sync`로 공개 프로필, 저장소, 최근 공개 활동을 가져온다. 결과는 `data/github.json`에 필요한 항목만 저장한다. 방문자의 브라우저에서 인증 토큰을 사용하지 않는다.
@@ -50,6 +56,7 @@ npm run preview
 | --- | --- |
 | `src/` | 홈과 글 상세의 HTML 구성 |
 | `public/site.css`, `public/site.js` | 디자인, 검색, 메뉴, 테마 |
+| `public/pixel-*.css`, `public/pixel-scenes.js`, `public/scene-player.js` | 픽셀 디자인, 풍경과 재생 조작 |
 | `content/` | 글 본문과 목록 |
 | `scripts/` | GitHub 조회, Markdown 변환, 미리보기 |
 | `.github/workflows/pages.yml` | 빌드와 Pages 배포 |

@@ -1,0 +1,743 @@
+(() => {
+  const width = 640
+  const height = 360
+
+  function random(seed) {
+    return () => {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0
+      return seed / 4294967296
+    }
+  }
+
+  function points(seed, count) {
+    const rand = random(seed)
+    return Array.from({ length: count }, () => [rand(), rand()])
+  }
+
+  const cityRipples = points(637, 23)
+  const lakeRipples = points(601, 30)
+  const riverRipples = points(19, 16)
+  const harborRipples = points(98, 24)
+  const raindrops = points(63, 150)
+  const snowflakes = points(317, 143)
+  const petals = points(37, 42)
+
+  function box(ctx, color, x, y, w, h) {
+    ctx.fillStyle = color
+    ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h))
+  }
+
+  function shape(ctx, color, points, step = 2) {
+    const top = Math.floor(Math.min(...points.map((point) => point[1])) / step) * step
+    const bottom = Math.max(...points.map((point) => point[1]))
+    ctx.fillStyle = color
+    for (let y = top; y < bottom; y += step) {
+      const scan = y + step / 2
+      const crossings = []
+      for (let index = 0; index < points.length; index += 1) {
+        const [x1, y1] = points[index]
+        const [x2, y2] = points[(index + 1) % points.length]
+        if ((y1 <= scan && y2 > scan) || (y2 <= scan && y1 > scan)) {
+          crossings.push(x1 + (x2 - x1) * (scan - y1) / (y2 - y1))
+        }
+      }
+      crossings.sort((first, second) => first - second)
+      for (let index = 0; index + 1 < crossings.length; index += 2) {
+        const left = Math.round(crossings[index] / step) * step
+        const right = Math.round(crossings[index + 1] / step) * step
+        ctx.fillRect(left, y, right - left, step)
+      }
+    }
+  }
+
+  function disc(ctx, color, x, y, rx, ry = rx, step = 2) {
+    ctx.fillStyle = color
+    for (let dy = -ry; dy < ry; dy += step) {
+      const span = Math.floor(rx * Math.sqrt(1 - (dy / ry) ** 2) / step) * step
+      ctx.fillRect(Math.round(x - span), Math.round(y + dy), span * 2, step)
+    }
+  }
+
+  function stripedSun(ctx, x, y, radius, color, stripe) {
+    disc(ctx, color, x, y, radius)
+    for (let dy = 6; dy < radius; dy += 6) {
+      const half = Math.floor(Math.sqrt(radius ** 2 - dy ** 2) / 2) * 2
+      box(ctx, stripe, x - half, y + dy, half * 2, 2)
+    }
+  }
+
+  function sky(ctx, bands, bottom, seed) {
+    const rand = random(seed)
+    for (let index = 0; index < bands.length; index += 1) {
+      const top = Math.round(index * bottom / bands.length / 2) * 2
+      const end = Math.round((index + 1) * bottom / bands.length / 2) * 2
+      box(ctx, bands[index], 0, top, width, end - top)
+      if (index === 0) continue
+      for (let dot = 0; dot < 240; dot += 1) {
+        const offset = Math.floor(rand() * 8) * 2
+        const y = rand() < 0.5 ? top + offset : top - offset
+        box(ctx, bands[y < top ? index : index - 1], Math.floor(rand() * 320) * 2, y, 2, 2)
+      }
+    }
+  }
+
+  function cloud(ctx, x, y, size, light, shadow) {
+    disc(ctx, shadow, x - size * 0.35, y, size, size * 0.23)
+    disc(ctx, light, x, y - size * 0.14, size * 0.93, size * 0.19)
+    disc(ctx, light, x + size * 0.73, y, size * 0.56, size * 0.12)
+    box(ctx, shadow, x - size, y + size * 0.12, size * 2.03, 2)
+  }
+
+  function stars(ctx, seed, count, bottom, colors) {
+    const rand = random(seed)
+    for (let index = 0; index < count; index += 1) {
+      const x = rand() * width
+      const y = 5 + rand() * (bottom - 5)
+      const size = rand() < 0.17 ? 2 : 1
+      const color = colors[Math.floor(rand() * colors.length)]
+      box(ctx, color, x, y, size, size)
+      if (index % 19 === 0) {
+        box(ctx, color, x - 2, y, 6, 1)
+        box(ctx, color, x, y - 2, 1, 5)
+      }
+    }
+  }
+
+  function water(ctx, top, bands, glints, seed) {
+    const rand = random(seed)
+    bands.forEach((color, index) => {
+      const y = top + Math.floor(index * (height - top) / bands.length)
+      const end = top + Math.floor((index + 1) * (height - top) / bands.length)
+      box(ctx, color, 0, y, width, end - y)
+    })
+    for (let index = 0; index < 460; index += 1) {
+      const y = top + rand() * (height - top)
+      const reach = 4 + 40 * (y - top) / (height - top)
+      box(ctx, glints[index % glints.length], rand() * width, y, 2 + rand() * reach, index % 5 === 0 ? 2 : 1)
+    }
+  }
+
+  function sparkleWater(ctx, time, top, range, color, ripples) {
+    for (let index = 0; index < ripples.length; index += 1) {
+      const [x, row] = ripples[index]
+      const start = x * width
+      const y = top + row * range
+      const phase = time * 1.4 + index * 1.71
+      const length = 3 + Math.floor((0.5 + 0.5 * Math.sin(phase)) * (8 + 14 * (y - top) / range))
+      if (Math.sin(phase * 0.61) > -0.15) box(ctx, color, start + time * 0.3, y, length, 1)
+    }
+  }
+
+  function pine(ctx, x, y, size, shade, light = shade, bark = shade) {
+    box(ctx, bark, x - size * 0.06, y - size * 0.23, size * 0.13, size * 0.23)
+    shape(ctx, shade, [[x, y - size], [x + size * 0.21, y - size * 0.58], [x + size * 0.08, y - size * 0.60],
+      [x + size * 0.30, y - size * 0.37], [x + size * 0.16, y - size * 0.42], [x + size * 0.40, y - size * 0.16],
+      [x - size * 0.38, y - size * 0.15], [x - size * 0.15, y - size * 0.43], [x - size * 0.29, y - size * 0.37],
+      [x - size * 0.08, y - size * 0.62], [x - size * 0.23, y - size * 0.56]])
+    shape(ctx, light, [[x, y - size * 0.94], [x - size * 0.10, y - size * 0.62],
+      [x - size * 0.03, y - size * 0.66], [x - size * 0.22, y - size * 0.39], [x - size * 0.07, y - size * 0.46],
+      [x - size * 0.30, y - size * 0.19], [x - size * 0.01, y - size * 0.23]])
+  }
+
+  function buildings(ctx, base, seed, min, max, colors, windowColors, gap) {
+    const rand = random(seed)
+    for (let x = -10; x < width; ) {
+      const w = 14 + Math.floor(rand() * 33)
+      const h = min + Math.floor(rand() * (max - min))
+      const y = base - h
+      const color = colors[Math.floor(rand() * colors.length)]
+      box(ctx, color, x, y, w, h)
+      box(ctx, colors[0], x + w - Math.floor(w / 5), y + 3, Math.floor(w / 5), h - 3)
+      if (h > max * 0.68) {
+        box(ctx, color, x + 4, y - 6, w - 10, 6)
+        if (rand() < 0.42) {
+          box(ctx, colors[0], x + w * 0.52, y - 15, 2, 10)
+          box(ctx, windowColors[0], x + w * 0.52, y - 16, 2, 2)
+        }
+      }
+      for (let wy = y + 7; wy < base - 5; wy += 7) {
+        for (let wx = x + 4; wx < x + w - 7; wx += 6) {
+          if (rand() > 0.54) box(ctx, windowColors[Math.floor(rand() * windowColors.length)], wx, wy, 3, 2)
+        }
+      }
+      x += w + gap + Math.floor(rand() * 6)
+    }
+  }
+
+  function pixelText(ctx, text, x, y, color) {
+    ctx.font = 'bold 10px monospace'
+    ctx.textBaseline = 'top'
+    ctx.fillStyle = color
+    ctx.fillText(text, x, y)
+  }
+
+  function railcar(ctx, x, y, lengths, body, stripe, glass) {
+    for (const length of lengths) {
+      box(ctx, '#212132', x + 3, y + 13, length - 5, 4)
+      box(ctx, body, x + 2, y, length - 4, 15)
+      box(ctx, body, x, y + 3, length, 10)
+      box(ctx, stripe, x, y + 10, length, 3)
+      box(ctx, '#202332', x + 6, y + 15, 7, 3)
+      box(ctx, '#202332', x + length - 14, y + 15, 8, 3)
+      for (let slot = 4; slot < length - 7; slot += 10) box(ctx, glass, x + slot, y + 3, 7, 5)
+      x += length + 3
+    }
+  }
+
+  function scene(id, name, accent, background, foreground) {
+    let layer
+    return {
+      id, name, accent,
+      draw(ctx, timeSeconds = 0) {
+        if (!layer) {
+          layer = document.createElement('canvas')
+          layer.width = width
+          layer.height = height
+          background(layer.getContext('2d'))
+        }
+        ctx.drawImage(layer, 0, 0)
+        foreground(ctx, timeSeconds)
+      },
+    }
+  }
+
+  const city = scene('night-city', '도시의 밤', '#eab2cc', (ctx) => {
+    sky(ctx, ['#20213e', '#29264a', '#383054', '#4b395e', '#694668', '#84526a', '#ab646e', '#cb7a7e'], 228, 101)
+    stars(ctx, 401, 90, 122, ['#817696', '#b294ac', '#e4b7bf'])
+    stripedSun(ctx, 475, 127, 33, '#efb6a3', '#d18a8a')
+    cloud(ctx, 104, 133, 88, '#9a5b74', '#774d70')
+    cloud(ctx, 519, 165, 63, '#ac6b78', '#8d5a78')
+    cloud(ctx, 316, 100, 38, '#60456a', '#573c62')
+    buildings(ctx, 216, 12, 26, 87, ['#393553', '#51415a', '#604760'], ['#b47580', '#d5928d', '#916581'], 0)
+    buildings(ctx, 227, 89, 43, 132, ['#24263f', '#2d2b46', '#39314a'], ['#e5a27e', '#ad7484', '#675674', '#f7c294'], 4)
+    water(ctx, 223, ['#46415d', '#3a3855', '#30314e', '#262943', '#20253e'], ['#61506a', '#4f4763', '#443d58', '#7b576c'], 29)
+    const rand = random(800)
+    for (let dot = 0; dot < 155; dot += 1) {
+      const y = 230 + rand() * 130
+      const x = 478 + (rand() - 0.5) * (26 + (y - 221) * 0.80)
+      box(ctx, ['#9b687d', '#8d5a77', '#e29c8d'][dot % 3], x, y, 3 + rand() * 14, 1)
+    }
+    box(ctx, '#171d35', 0, 227, 640, 11)
+    box(ctx, '#98697d', 0, 227, 640, 2)
+    box(ctx, '#23253e', 0, 239, 640, 4)
+    for (const x of [71, 232, 399, 566]) {
+      box(ctx, '#22253d', x, 240, 12, 37)
+      box(ctx, '#42405a', x + 10, 243, 3, 27)
+      box(ctx, '#252841', x - 4, 274, 22, 5)
+    }
+    for (let x = 7; x < width; x += 21) {
+      box(ctx, '#28263f', x, 223, 2, 6)
+      box(ctx, '#da9688', x, 222, 2, 2)
+    }
+  }, (ctx, time) => {
+    sparkleWater(ctx, time, 255, 104, '#b87c86', cityRipples)
+    const x = (412 + time * 34) % 835 - 176
+    railcar(ctx, x, 208, [51, 51, 51], '#a67581', '#6f4d6e', '#ffc88f')
+    box(ctx, '#ffe7ac', x + 157, 215, 2, 2)
+    box(ctx, '#f47280', x + 1, 216, 2, 2)
+  })
+
+  const lake = scene('forest-lake', '호수 위 보트', '#89d3ba', (ctx) => {
+    sky(ctx, ['#8ec8d8', '#a4d3df', '#b6dce0', '#d1e8e0', '#e7eddc'], 208, 112)
+    cloud(ctx, 145, 51, 70, '#edf3e7', '#cde5e1')
+    cloud(ctx, 480, 69, 60, '#edf3e7', '#cde5e1')
+    const ridge = [[0, 151], [56, 113], [94, 128], [163, 83], [213, 137], [303, 94], [352, 63],
+      [417, 126], [459, 93], [530, 135], [597, 111], [640, 136], [640, 209], [0, 209]]
+    shape(ctx, '#80aab3', ridge)
+    shape(ctx, '#d9e9df', [[127, 108], [163, 83], [190, 113], [170, 106], [163, 115], [154, 103]])
+    shape(ctx, '#e4eee2', [[317, 89], [352, 63], [390, 103], [359, 93], [351, 108], [339, 87]])
+    shape(ctx, '#628f91', [[0, 132], [86, 160], [148, 191], [222, 155], [284, 176], [361, 154], [418, 127],
+      [521, 174], [597, 134], [640, 143], [640, 210], [0, 210]])
+    shape(ctx, '#497d78', [[0, 160], [66, 167], [125, 195], [211, 202], [332, 194], [452, 173], [528, 188],
+      [582, 159], [640, 156], [640, 213], [0, 213]])
+    const rand = random(199)
+    for (let x = 0; x < width; x += 4 + rand() * 7) {
+      const shore = 203 - (x < 120 ? (120 - x) / 8 : Math.max(0, x - 486) / 10)
+      pine(ctx, x, shore, 10 + rand() * 35, '#3b7067', '#568276')
+    }
+    water(ctx, 205, ['#82b9b3', '#74b1ab', '#5fa6a3', '#559e9d', '#489294'], ['#a0cebf', '#6bc1b0', '#548e8e', '#b0dbce'], 43)
+    shape(ctx, '#326e65', [[0, 265], [56, 277], [111, 307], [138, 360], [0, 360]])
+    shape(ctx, '#497d6b', [[0, 277], [50, 287], [118, 330], [132, 360], [0, 360]])
+    for (let x = 2; x < 91; x += 14) pine(ctx, x, 288 + x * 0.62, 34 + rand() * 52, '#24574f', '#3d7160', '#524b44')
+    for (let index = 0; index < 46; index += 1) {
+      const x = rand() * 106
+      box(ctx, index % 3 === 0 ? '#d3c98e' : '#65927a', x, 313 + rand() * 42, 2 + rand() * 6, 2)
+    }
+  }, (ctx, time) => {
+    sparkleWater(ctx, time, 218, 138, '#b7dfd1', lakeRipples)
+    const x = 303 + Math.sin(time / 11) * 94
+    const y = 260 + Math.sin(time * 2.1) * 1.3
+    for (let wave = 0; wave < 6; wave += 1) {
+      box(ctx, wave % 2 ? '#90c8bd' : '#c0e4d4', x - 36 - wave * 7, y + 7 + wave * 3, 23 - wave * 2, 1)
+    }
+    shape(ctx, '#724b43', [[x - 26, y], [x + 38, y], [x + 27, y + 10], [x - 16, y + 10]])
+    box(ctx, '#d79c6c', x - 22, y + 2, 56, 3)
+    box(ctx, '#755d4f', x + 4, y - 44, 2, 48)
+    shape(ctx, '#f4e6bf', [[x + 2, y - 43], [x + 2, y - 4], [x - 22, y - 4]])
+    shape(ctx, '#eee1ac', [[x + 7, y - 37], [x + 30, y - 7], [x + 7, y - 7]])
+    box(ctx, '#b77363', x + 6, y - 44, 12 + Math.sin(time * 4) * 2, 4)
+  })
+
+  const coast = scene('sunset-drive', '해안 드라이브', '#f4a17e', (ctx) => {
+    sky(ctx, ['#5d527b', '#775779', '#9b617d', '#c17583', '#dd8c87', '#efa67f', '#ffca91', '#ffdb9f'], 198, 13)
+    stripedSun(ctx, 168, 143, 49, '#ffe9b1', '#eeaa86')
+    cloud(ctx, 65, 76, 55, '#cf8791', '#9e6c89')
+    cloud(ctx, 498, 126, 100, '#eda68d', '#d7888c')
+    water(ctx, 197, ['#d8918d', '#bd8392', '#9c778c', '#876c87', '#6c6283'], ['#eaa991', '#ba8a9c', '#a2778c', '#e6a288'], 77)
+    shape(ctx, '#746382', [[0, 200], [30, 182], [52, 188], [70, 179], [90, 203], [108, 215], [0, 215]])
+    shape(ctx, '#815e78', [[298, 200], [356, 180], [386, 183], [427, 160], [473, 157], [511, 111], [548, 100],
+      [582, 69], [640, 67], [640, 360], [185, 360], [223, 298], [253, 264]])
+    shape(ctx, '#a46f79', [[640, 107], [609, 110], [590, 133], [556, 146], [522, 172], [486, 190], [516, 233],
+      [553, 255], [594, 360], [640, 360]])
+    shape(ctx, '#a97c80', [[183, 360], [234, 286], [301, 257], [382, 231], [432, 212], [468, 188], [496, 187],
+      [498, 200], [460, 229], [417, 251], [357, 284], [335, 311], [315, 360]])
+    shape(ctx, '#494254', [[207, 360], [241, 308], [275, 285], [357, 253], [413, 234], [460, 208], [477, 191],
+      [487, 191], [473, 214], [431, 242], [381, 269], [314, 302], [281, 360]])
+    shape(ctx, '#edd09c', [[234, 360], [261, 316], [270, 309], [263, 322], [243, 360]])
+    shape(ctx, '#c5a68a', [[282, 299], [318, 281], [329, 276], [333, 277], [298, 294], [287, 302]])
+    shape(ctx, '#c5a68a', [[349, 268], [378, 257], [381, 258], [355, 270]])
+    shape(ctx, '#edbd94', [[199, 360], [231, 310], [267, 281], [354, 249], [410, 229], [439, 213], [439, 216],
+      [412, 232], [355, 253], [269, 285], [233, 314], [205, 360]])
+    for (const [x, y, size] of [[209, 342, 15], [237, 306, 11], [274, 280, 8], [318, 262, 6], [365, 245, 5], [403, 233, 4]]) {
+      box(ctx, '#684b62', x, y, 3, size)
+      box(ctx, '#ffe2ae', x - 1, y + 1, 4, 2)
+    }
+    const rand = random(614)
+    for (let index = 0; index < 100; index += 1) {
+      const x = 503 + rand() * 137
+      const y = 156 + rand() * 199
+      if (y > 209 && x < 527 + (y - 209) / 3) continue
+      box(ctx, index % 2 ? '#714e6b' : '#be8586', x, y, 3 + rand() * 12, 2)
+    }
+    for (const [x, y, size] of [[560, 268, 38], [603, 313, 52], [510, 230, 17]]) {
+      shape(ctx, '#523c53', [[x - 3, y], [x + 2, y - size], [x + 6, y - size], [x + 1, y]])
+      shape(ctx, '#62475e', [[x + 4, y - size], [x + 14, y - size - 12], [x + 25, y - size - 9], [x + 12, y - size - 5],
+        [x + 4, y - size], [x - 15, y - size - 5], [x - 24, y - size + 2], [x - 11, y - size - 8]])
+    }
+  }, (ctx, time) => {
+    for (let line = 0; line < 11; line += 1) {
+      const y = 199 + line * 10
+      const size = 13 + (Math.sin(time * 1.6 + line) + 1) * (7 + line)
+      box(ctx, line % 2 ? '#ffd1a0' : '#e3a28c', 161 - size / 2 + Math.sin(line) * 16, y, size, 1)
+    }
+    const progress = Math.min(1, 0.33 + time / 19)
+    const x = 481 - progress * 258
+    const y = 193 + progress ** 1.37 * 148
+    const size = 8 + progress * 26
+    disc(ctx, '#383746', x, y + 5, size * 0.69, size * 0.18)
+    shape(ctx, '#bd5263', [[x - size * 0.55, y], [x - size * 0.38, y - size * 0.36], [x + size * 0.16, y - size * 0.42],
+      [x + size * 0.46, y - size * 0.21], [x + size * 0.60, y + 4], [x - size * 0.58, y + 5]], 1)
+    box(ctx, '#754b65', x - size * 0.29, y - size * 0.28, size * 0.53, size * 0.14)
+    box(ctx, '#ffba91', x - size * 0.52, y + 1, size * 0.18, 2)
+    box(ctx, '#ffba91', x + size * 0.34, y + 1, size * 0.18, 2)
+  })
+
+  const rain = scene('rainy-alley', '비 오는 골목', '#9b9bdc', (ctx) => {
+    sky(ctx, ['#333552', '#3d4265', '#505374', '#656181', '#786c8b'], 220, 114)
+    buildings(ctx, 219, 603, 44, 109, ['#464460', '#51506d', '#595673'], ['#85758d', '#9d819b', '#c09aa1'], 0)
+    shape(ctx, '#423b54', [[0, 167], [640, 170], [640, 360], [0, 360]])
+    shape(ctx, '#57506a', [[242, 216], [388, 214], [576, 360], [72, 360]])
+    shape(ctx, '#65556b', [[263, 220], [348, 218], [466, 360], [14, 360]])
+    shape(ctx, '#282a46', [[0, 29], [169, 102], [218, 128], [218, 248], [0, 329]])
+    shape(ctx, '#34304b', [[0, 52], [162, 116], [162, 262], [0, 324]])
+    shape(ctx, '#292b47', [[640, 19], [450, 91], [404, 129], [404, 238], [640, 329]])
+    shape(ctx, '#36324e', [[640, 63], [479, 106], [445, 135], [445, 256], [640, 325]])
+    shape(ctx, '#665067', [[5, 159], [180, 173], [180, 197], [5, 191]])
+    shape(ctx, '#ca888c', [[9, 171], [176, 178], [176, 184], [9, 182]])
+    box(ctx, '#25233b', 26, 194, 127, 72)
+    box(ctx, '#b36f74', 38, 199, 103, 64)
+    box(ctx, '#e5a281', 42, 201, 95, 52)
+    for (const x of [65, 89, 113]) box(ctx, '#734d66', x, 197, 4, 63)
+    box(ctx, '#734d66', 42, 223, 95, 3)
+    box(ctx, '#805369', 53, 133, 84, 31)
+    box(ctx, '#f2b194', 57, 137, 76, 23)
+    pixelText(ctx, 'RAMEN', 78, 145, '#61445b')
+    box(ctx, '#30283f', 499, 183, 113, 81)
+    box(ctx, '#456074', 506, 189, 101, 70)
+    box(ctx, '#8bc2b4', 512, 196, 86, 60)
+    for (const x of [534, 556, 578]) box(ctx, '#5a7884', x, 193, 4, 66)
+    box(ctx, '#5a7884', 512, 220, 86, 4)
+    box(ctx, '#79b0a9', 527, 139, 88, 24)
+    box(ctx, '#41677a', 532, 142, 78, 18)
+    pixelText(ctx, 'RECORDS', 550, 147, '#afdfcb')
+    for (const [x, y] of [[202, 190], [235, 184], [424, 186], [452, 178]]) {
+      box(ctx, '#53405d', x, y, 16, 37)
+      box(ctx, '#a47d9b', x + 3, y + 4, 9, 19)
+    }
+    const rand = random(7)
+    for (let index = 0; index < 150; index += 1) {
+      const y = 250 + rand() * 110
+      const x = rand() * width
+      const color = x < 185 ? '#a16f85' : x > 471 ? '#698f9d' : '#786481'
+      box(ctx, color, x, y, 1 + rand() * 23, rand() < 0.13 ? 2 : 1)
+    }
+    for (const [x, y] of [[252, 233], [392, 235], [236, 253], [414, 261], [214, 285], [448, 293], [174, 324], [484, 333]]) {
+      box(ctx, '#c4a0a7', x, y, 15, 2)
+    }
+  }, (ctx, time) => {
+    const x = 323 + time * 2.9
+    const y = 292 - time * 0.5
+    disc(ctx, '#53475f', x + 1, y + 20, 19, 5)
+    box(ctx, '#332b44', x - 6, y + 2, 5, 16 + Math.sin(time * 6) * 3)
+    box(ctx, '#352f4a', x + 1, y + 3, 5, 16 - Math.sin(time * 6) * 3)
+    box(ctx, '#5a4f74', x - 7, y - 10, 13, 15)
+    box(ctx, '#a9848b', x - 4, y - 17, 8, 7)
+    box(ctx, '#c2a5aa', x + 3, y - 24, 1, 24)
+    shape(ctx, '#8e586d', [[x - 27, y - 22], [x - 19, y - 33], [x - 5, y - 38], [x + 9, y - 38],
+      [x + 24, y - 32], [x + 30, y - 21], [x + 14, y - 24], [x + 1, y - 21], [x - 13, y - 24]], 1)
+    shape(ctx, '#d18a93', [[x - 21, y - 29], [x - 7, y - 37], [x + 7, y - 37], [x + 16, y - 33],
+      [x + 1, y - 34], [x - 8, y - 30]], 1)
+    for (let drop = 0; drop < raindrops.length; drop += 1) {
+      const [startX, startY] = raindrops[drop]
+      const px = ((startX * width - time * (24 + drop % 8)) % width + width) % width
+      const py = (startY * height + time * (97 + drop % 40)) % height
+      const color = drop % 5 === 0 ? '#c3bcd0' : '#8587aa'
+      box(ctx, color, px, py, 1, 3 + drop % 3)
+      box(ctx, color, px - 1, py + 4, 1, 3)
+      if (drop % 9 === 0 && py > 274) box(ctx, '#b2a6bd', px - 4, py + 9, 7, 1)
+    }
+  })
+
+  const forest = scene('forest-train', '숲속 기차', '#b4c888', (ctx) => {
+    sky(ctx, ['#d2d6af', '#dce0b6', '#e4dfb6', '#e9dfb6'], 240, 37)
+    disc(ctx, '#f5e7b4', 135, 86, 44)
+    cloud(ctx, 481, 68, 81, '#f5eac9', '#e7e2be')
+    shape(ctx, '#a3ab81', [[0, 155], [93, 116], [139, 75], [208, 131], [255, 139], [307, 104], [363, 69],
+      [471, 121], [528, 90], [640, 144], [640, 244], [0, 244]])
+    shape(ctx, '#718e74', [[0, 153], [64, 129], [135, 157], [191, 198], [251, 182], [316, 150], [389, 169],
+      [457, 194], [520, 145], [583, 129], [640, 164], [640, 255], [0, 255]])
+    const rand = random(152)
+    for (let x = -5; x < 660; x += 8 + rand() * 13) {
+      const y = 223 + rand() * 12
+      const size = 25 + rand() * 63
+      pine(ctx, x, y, size, '#4c735c', '#668967', '#5a6253')
+    }
+    shape(ctx, '#8a9869', [[0, 216], [105, 227], [214, 215], [349, 224], [465, 210], [640, 216], [640, 360], [0, 360]])
+    shape(ctx, '#728b63', [[0, 278], [119, 265], [306, 277], [442, 248], [640, 266], [640, 360], [0, 360]])
+    for (let index = 0; index < 209; index += 1) {
+      box(ctx, ['#a0a16c', '#607d5f', '#9fad76', '#b9b583'][index % 4], rand() * width, 217 + rand() * 143, 2 + rand() * 13, 1)
+    }
+    box(ctx, '#665c57', 0, 248, 640, 16)
+    for (let x = 0; x < width; x += 13) {
+      box(ctx, '#4c4946', x, 246, 6, 16)
+      box(ctx, '#8b7361', x + 1, 247, 4, 13)
+    }
+    box(ctx, '#d0b683', 0, 249, width, 2)
+    box(ctx, '#b29775', 0, 257, width, 2)
+    for (const [x, y, size] of [[24, 337, 157], [79, 366, 124], [152, 359, 86], [531, 374, 96], [592, 366, 142], [646, 340, 164]]) {
+      pine(ctx, x, y, size, '#2c524c', '#3f6a51', '#4d4c46')
+    }
+    for (let index = 0; index < 37; index += 1) {
+      const x = rand() * width
+      const y = 300 + rand() * 60
+      box(ctx, '#b3a36c', x, y, 2, 3)
+      box(ctx, '#e9d993', x, y, 2, 1)
+    }
+  }, (ctx, time) => {
+    const x = 185 + time * 24
+    railcar(ctx, x, 224, [51, 46, 46], '#bc634b', '#8d4d45', '#f4d99a')
+    box(ctx, '#354850', x + 150, 230, 33, 15)
+    box(ctx, '#3e5656', x + 160, 221, 24, 20)
+    box(ctx, '#293e49', x + 174, 215, 6, 12)
+    box(ctx, '#e9c675', x + 183, 231, 3, 5)
+    box(ctx, '#a65d46', x + 150, 241, 36, 3)
+    for (const wheel of [156, 169, 180]) disc(ctx, '#283b41', x + wheel, 246, 4, 4, 1)
+    for (let puff = 0; puff < 5; puff += 1) {
+      const drift = (puff * 12 + time * 11) % 61
+      disc(ctx, puff % 2 ? '#d4d4b3' : '#e6dec1', x + 175 - drift * 1.60, 212 - drift * 0.60,
+        3 + drift / 8, 2 + drift / 13)
+    }
+  })
+
+  function cabin(ctx, x, y, size, wall, roof, window) {
+    const w = size
+    const h = Math.round(size * 0.53)
+    box(ctx, wall, x, y - h, w, h)
+    box(ctx, '#5b536a', x + w * 0.73, y - h - size * 0.33, size * 0.11, size * 0.41)
+    box(ctx, '#d4d9ed', x + w * 0.72, y - h - size * 0.33, size * 0.13, 3)
+    const peak = y - h - size * 0.36
+    shape(ctx, roof, [[x - 8, y - h + 4], [x + w * 0.36, peak], [x + w + 7, y - h + 4]])
+    shape(ctx, '#e9edf1', [[x - 9, y - h], [x + w * 0.36, peak - 4], [x + w + 8, y - h],
+      [x + w, y - h + 1], [x + w * 0.36, peak + 6], [x, y - h + 4]])
+    box(ctx, roof, x + w * 0.51, y - h * 0.57, w * 0.17, h * 0.57)
+    for (const left of [x + w * 0.13, x + w * 0.74]) {
+      box(ctx, window, left, y - h * 0.69, w * 0.14, h * 0.31)
+      box(ctx, wall, left + w * 0.06, y - h * 0.69, 2, h * 0.31)
+    }
+    box(ctx, '#c5c9e2', x - 4, y - 2, w + 11, 3)
+  }
+
+  const snow = scene('snow-village', '눈 내리는 마을', '#b9c9ee', (ctx) => {
+    sky(ctx, ['#546181', '#667393', '#7884a7', '#929bbb', '#adb2cc', '#bec2d7'], 223, 65)
+    disc(ctx, '#ebe6e8', 119, 114, 24)
+    shape(ctx, '#8794b1', [[0, 172], [63, 142], [121, 169], [207, 106], [248, 95], [283, 117], [331, 157],
+      [433, 115], [465, 111], [527, 78], [596, 141], [640, 152], [640, 252], [0, 252]])
+    shape(ctx, '#c9ccdf', [[172, 134], [207, 106], [248, 95], [271, 111], [254, 116], [235, 108], [220, 120],
+      [201, 118]])
+    shape(ctx, '#d4d8e7', [[471, 107], [527, 78], [568, 116], [545, 113], [528, 98], [512, 102], [495, 121]])
+    shape(ctx, '#aab3ce', [[0, 186], [84, 183], [160, 170], [239, 188], [321, 168], [405, 191], [492, 167], [640, 185], [640, 360], [0, 360]])
+    const rand = random(830)
+    for (let x = 0; x < width; x += 10 + rand() * 14) pine(ctx, x, 212 + rand() * 12, 20 + rand() * 43, '#7785a3', '#adbad0')
+    shape(ctx, '#d4daeb', [[0, 225], [134, 230], [242, 212], [352, 217], [494, 205], [640, 220], [640, 360], [0, 360]])
+    shape(ctx, '#bdc6df', [[0, 285], [140, 263], [241, 271], [322, 251], [420, 254], [532, 235], [640, 242], [640, 360], [0, 360]])
+    shape(ctx, '#dce0ed', [[0, 318], [150, 296], [266, 306], [408, 288], [531, 296], [640, 286], [640, 360], [0, 360]])
+    shape(ctx, '#aaafcf', [[336, 258], [343, 258], [380, 272], [388, 296], [365, 324], [369, 360], [321, 360],
+      [328, 334], [352, 305], [370, 290], [365, 277]])
+    cabin(ctx, 89, 261, 59, '#a57e88', '#716679', '#fbd6a7')
+    cabin(ctx, 268, 255, 111, '#9c707b', '#60566c', '#ffce96')
+    cabin(ctx, 475, 246, 63, '#8c7387', '#615972', '#f5cca2')
+    cabin(ctx, 405, 221, 32, '#8b8299', '#6e697f', '#efcea4')
+    for (const [x, y, size] of [[20, 339, 118], [80, 351, 82], [217, 298, 59], [556, 335, 101], [614, 345, 134]]) {
+      pine(ctx, x, y, size, '#536982', '#a1b4cb', '#776b83')
+    }
+    for (let index = 0; index < 133; index += 1) {
+      box(ctx, ['#f6f4f7', '#bbc4de', '#cbd5e7'][index % 3], rand() * width, 270 + rand() * 90, 1 + rand() * 6, 1)
+    }
+  }, (ctx, time) => {
+    for (let flake = 0; flake < snowflakes.length; flake += 1) {
+      const [startX, startY] = snowflakes[flake]
+      const y = (startY * height + time * (7 + flake % 14)) % height
+      const x = (startX * width + time * 5 + Math.sin(flake + time) * 5 + width) % width
+      const size = flake % 9 === 0 ? 3 : 1
+      box(ctx, flake % 3 === 0 ? '#f8f2f4' : '#e1e5ef', x, y, size, size)
+    }
+    for (let puff = 0; puff < 5; puff += 1) {
+      const drift = (puff * 9 + time * 5.5) % 48
+      disc(ctx, puff % 2 ? '#afb2c8' : '#c1c3d3', 354 + drift * 0.72, 158 - drift * 0.94,
+        3 + drift / 8, 2 + drift / 14)
+    }
+  })
+
+  const roof = scene('moonlit-roof', '달빛 옥상', '#c0bbef', (ctx) => {
+    box(ctx, '#644963', 0, 0, width, height)
+    sky(ctx, ['#1c213c', '#222743', '#292b4a', '#333251', '#3f395a', '#504061', '#644963'], 255, 826)
+    stars(ctx, 54, 127, 184, ['#727393', '#9a95b4', '#cfc1d3'])
+    disc(ctx, '#d6cbe4', 392, 103, 54)
+    disc(ctx, '#e8d9e9', 387, 97, 47)
+    disc(ctx, '#c8bed8', 367, 88, 11, 8)
+    disc(ctx, '#d1c5de', 409, 120, 17, 11)
+    disc(ctx, '#d1c5de', 376, 128, 10, 9)
+    disc(ctx, '#dbcee2', 416, 76, 10, 8)
+    cloud(ctx, 381, 148, 105, '#64546e', '#4d4465')
+    cloud(ctx, 128, 126, 85, '#453d60', '#393652')
+    buildings(ctx, 252, 91, 15, 95, ['#292740', '#36334f', '#413751'], ['#6e586f', '#ac767a', '#b68a91'], 2)
+    shape(ctx, '#22243c', [[0, 231], [99, 221], [149, 246], [246, 234], [246, 360], [0, 360]])
+    shape(ctx, '#292840', [[0, 256], [106, 239], [203, 269], [315, 252], [640, 272], [640, 360], [0, 360]])
+    shape(ctx, '#35344b', [[0, 275], [111, 263], [224, 289], [353, 268], [539, 291], [640, 281], [640, 360], [0, 360]])
+    shape(ctx, '#171c34', [[204, 293], [325, 264], [534, 283], [640, 287], [640, 360], [244, 360]])
+    shape(ctx, '#3d3a53', [[198, 288], [325, 260], [534, 279], [640, 283], [640, 289], [524, 287], [327, 268], [198, 296]])
+    shape(ctx, '#6f5e76', [[197, 287], [324, 259], [534, 278], [640, 282], [640, 284], [533, 280], [324, 261], [197, 289]])
+    box(ctx, '#353148', 39, 246, 58, 43)
+    box(ctx, '#51425f', 34, 241, 65, 7)
+    for (let y = 252; y < 275; y += 5) box(ctx, '#22253e', 45, y, 44, 2)
+    box(ctx, '#302e48', 535, 239, 10, 43)
+    box(ctx, '#66536f', 531, 235, 18, 5)
+    box(ctx, '#292941', 118, 205, 3, 62)
+    box(ctx, '#55516c', 102, 207, 37, 2)
+    box(ctx, '#55516c', 110, 217, 26, 2)
+    for (let x = 106; x < 138; x += 7) box(ctx, '#4c4b67', x, 203, 1, 14)
+    for (let line = 0; line < 8; line += 1) {
+      box(ctx, '#25263d', 271 + line * 8, 305 + line * 5, 270 - line * 12, 1)
+    }
+  }, (ctx, time) => {
+    const x = 331
+    const y = 260
+    const tail = Math.sin(time * 2.1) * 3
+    shape(ctx, '#171a2c', [[x - 13, y], [x - 12, y - 9], [x - 6, y - 16], [x + 1, y - 14], [x + 6, y - 8],
+      [x + 6, y], [x + 14, y + 1], [x + 14, y + 4], [x - 16, y + 3]], 1)
+    box(ctx, '#171a2c', x - 13, y - 20, 12, 10)
+    shape(ctx, '#171a2c', [[x - 13, y - 17], [x - 13, y - 26], [x - 8, y - 21], [x - 6, y - 20],
+      [x - 1, y - 25], [x, y - 17]], 1)
+    shape(ctx, '#171a2c', [[x + 8, y + 1], [x + 16, y], [x + 22, y - 5], [x + 24, y - 12 + tail], [x + 27, y - 12 + tail],
+      [x + 26, y - 3], [x + 19, y + 4], [x + 9, y + 4]], 1)
+    box(ctx, '#b7a8c5', x - 11, y - 17, 2, 1)
+    if (Math.floor(time * 2) % 4 < 2) box(ctx, '#ce7e9b', 119, 202, 2, 2)
+  })
+
+  function blossom(ctx, x, y, size, seed) {
+    const rand = random(seed)
+    shape(ctx, '#694858', [[x - 7, y], [x - 4, y - size * 0.58], [x - size * 0.24, y - size * 0.78],
+      [x - size * 0.20, y - size * 0.79], [x - 1, y - size * 0.66], [x + size * 0.12, y - size * 0.88],
+      [x + size * 0.15, y - size * 0.87], [x + 5, y - size * 0.49], [x + size * 0.35, y - size * 0.68],
+      [x + size * 0.38, y - size * 0.67], [x + 5, y - size * 0.41], [x + 8, y]])
+    for (let cluster = 0; cluster < 39; cluster += 1) {
+      const px = x + (rand() - 0.5) * size * 1.14
+      const py = y - size * (0.59 + rand() * 0.34) - 0.23 * (size * 0.45 - Math.abs(x - px))
+      const radius = size * (0.065 + rand() * 0.14)
+      disc(ctx, ['#ba6e8f', '#cd809e', '#e292ad', '#efa6b7', '#ec9cb3'][cluster % 5], px, py, radius, radius * 0.56)
+      disc(ctx, ['#f5b5c7', '#f1a5bb', '#f7c3cf'][cluster % 3], px - 3, py - radius * 0.3, radius * 0.71, radius * 0.24)
+    }
+    for (let detail = 0; detail < 54; detail += 1) {
+      const px = x + (rand() - 0.5) * size * 1.18
+      const py = y - size * (0.62 + rand() * 0.31)
+      box(ctx, detail % 2 ? '#f3bbcb' : '#b87697', px, py, 2, 2)
+    }
+  }
+
+  const blossoms = scene('cherry-river', '벚꽃 강변', '#e5a6c4', (ctx) => {
+    sky(ctx, ['#a6c7d9', '#b9cede', '#ccd8e4', '#e0dde8', '#efe2e6'], 201, 123)
+    cloud(ctx, 343, 54, 77, '#f2e5e9', '#d9dbe7')
+    shape(ctx, '#a0adb8', [[0, 168], [96, 137], [166, 144], [252, 117], [336, 152], [401, 125], [468, 144],
+      [520, 127], [640, 148], [640, 216], [0, 216]])
+    shape(ctx, '#94a2ac', [[0, 191], [132, 163], [206, 187], [310, 169], [410, 176], [496, 158], [640, 177], [640, 216], [0, 216]])
+    const rand = random(38)
+    for (let x = 0; x < width; x += 18) {
+      disc(ctx, ['#a88fae', '#c192b0', '#d4a4ba'][Math.floor(rand() * 3)], x, 188 - rand() * 13, 14, 6)
+    }
+    water(ctx, 196, ['#9aadc1', '#8da9bf', '#85a2bb', '#7995b3', '#7189aa'], ['#b4bfd0', '#b0a9c3', '#7897b3', '#deb2c5'], 29)
+    for (const x of [401, 479, 551, 621]) {
+      box(ctx, '#927f96', x, 198, 7, 20)
+      box(ctx, '#a599aa', x + 5, 198, 3, 15)
+    }
+    box(ctx, '#8e8199', 374, 193, 267, 6)
+    box(ctx, '#e2bec7', 374, 191, 267, 2)
+    for (let x = 382; x < width; x += 10) box(ctx, '#9d879f', x, 184, 2, 9)
+    box(ctx, '#a8859a', 374, 184, 266, 1)
+    shape(ctx, '#776884', [[0, 274], [113, 269], [206, 288], [322, 306], [471, 304], [640, 281], [640, 360], [0, 360]])
+    shape(ctx, '#bd9faa', [[0, 291], [117, 280], [218, 300], [344, 324], [484, 319], [640, 298], [640, 360], [0, 360]])
+    shape(ctx, '#d3b8bd', [[0, 310], [112, 295], [217, 317], [345, 341], [490, 337], [640, 316], [640, 342], [485, 360],
+      [345, 360], [216, 340], [108, 318], [0, 331]])
+    blossom(ctx, 89, 306, 238, 609)
+    blossom(ctx, 585, 309, 208, 930)
+    blossom(ctx, 173, 293, 113, 59)
+    for (let index = 0; index < 112; index += 1) {
+      box(ctx, ['#eac6cc', '#ca93ad', '#b68ba2'][index % 3], rand() * width, 303 + rand() * 57, 2 + rand() * 4, 1)
+    }
+  }, (ctx, time) => {
+    sparkleWater(ctx, time, 211, 55, '#d2c1d3', riverRipples)
+    for (let index = 0; index < petals.length; index += 1) {
+      const [startX, startY] = petals[index]
+      const x = (startX * width + time * (7 + index % 6) + Math.sin(index + time) * 7 + width) % width
+      const y = (startY * 304 + time * (4 + index % 6)) % 314
+      box(ctx, index % 2 === 0 ? '#f9c9d2' : '#df99b1', x, y, 2 + (Math.sin(time * 3 + index) > 0 ? 2 : 0), 2)
+    }
+  })
+
+  const observatory = scene('star-observatory', '별빛 관측소', '#adb9f2', (ctx) => {
+    sky(ctx, ['#131831', '#191e3a', '#222646', '#2d2c51', '#3c355e', '#503e66', '#6d4d70'], 266, 63)
+    const rand = random(328)
+    for (let index = 0; index < 1039; index += 1) {
+      const x = rand() * width
+      const y = 233 - x * 0.31 + (rand() - 0.5) * (36 + rand() * 74)
+      box(ctx, ['#3e3b64', '#535079', '#63587e', '#77709a', '#343a63'][index % 5], x, y, index % 9 === 0 ? 2 : 1, 1)
+    }
+    stars(ctx, 16, 220, 224, ['#8b8fb4', '#aaaacc', '#d7c8e4', '#e5d6e8'])
+    shape(ctx, '#343550', [[0, 235], [69, 201], [121, 215], [165, 179], [236, 217], [305, 194], [360, 208],
+      [412, 155], [473, 186], [505, 177], [567, 213], [640, 207], [640, 360], [0, 360]])
+    shape(ctx, '#252e48', [[0, 248], [100, 224], [192, 256], [256, 240], [340, 259], [423, 213], [480, 241], [640, 211],
+      [640, 360], [0, 360]])
+    shape(ctx, '#23273e', [[0, 299], [86, 289], [189, 275], [236, 261], [354, 258], [421, 267], [524, 289], [640, 281],
+      [640, 360], [0, 360]])
+    shape(ctx, '#3b3b52', [[0, 337], [93, 319], [153, 321], [230, 302], [276, 311], [361, 283], [448, 298], [569, 315],
+      [640, 307], [640, 360], [0, 360]])
+    for (let index = 0; index < 110; index += 1) {
+      box(ctx, ['#53516b', '#2e3049', '#676077'][index % 3], rand() * width, 314 + rand() * 46, 3 + rand() * 15, 1)
+    }
+    box(ctx, '#66637e', 269, 213, 119, 63)
+    box(ctx, '#4a4a68', 362, 213, 26, 63)
+    box(ctx, '#79748d', 264, 212, 129, 6)
+    disc(ctx, '#aba3b7', 329, 212, 64, 62)
+    shape(ctx, '#706e92', [[329, 151], [345, 152], [364, 163], [377, 177], [390, 200], [393, 212],
+      [365, 212], [361, 191], [349, 169]])
+    shape(ctx, '#4d4e70', [[307, 153], [319, 150], [331, 169], [339, 193], [341, 213], [326, 213], [321, 184]])
+    shape(ctx, '#d4bcc9', [[307, 156], [318, 153], [331, 177], [329, 181], [319, 161], [309, 163]])
+    box(ctx, '#6c6886', 264, 211, 129, 5)
+    box(ctx, '#31364f', 314, 236, 23, 42)
+    box(ctx, '#bea481', 321, 244, 6, 8)
+    box(ctx, '#d6ac90', 288, 232, 12, 7)
+    box(ctx, '#373952', 398, 239, 37, 37)
+    box(ctx, '#5b5976', 395, 235, 43, 6)
+    box(ctx, '#777d95', 417, 208, 2, 30)
+    box(ctx, '#777d95', 411, 212, 16, 2)
+    shape(ctx, '#646079', [[308, 276], [337, 276], [366, 360], [313, 360]], 2)
+    for (const [x, y] of [[310, 283], [337, 287], [313, 302], [344, 309], [317, 324], [353, 337]]) {
+      box(ctx, '#76728a', x, y, 2, 7)
+      box(ctx, '#ffc592', x - 1, y, 4, 2)
+    }
+  }, (ctx, time) => {
+    const phase = (time + 0.7) % 6.7
+    if (phase < 1.8) {
+      const x = 521 - phase * 97
+      const y = 39 + phase * 37
+      for (let pixel = 0; pixel < 23; pixel += 1) {
+        box(ctx, pixel < 5 ? '#f2ddea' : pixel < 13 ? '#b0a4ce' : '#66638b', x + pixel * 2, y - pixel * 0.76, 3, 1)
+      }
+      box(ctx, '#fcf2ef', x, y, 3, 2)
+    }
+    const glimmer = Math.sin(time * 2.1)
+    if (glimmer > 0) {
+      box(ctx, '#d6c5df', 212, 71, 3, 1)
+      box(ctx, '#d6c5df', 213, 70, 1, 3)
+    }
+    box(ctx, glimmer > 0 ? '#e8a6ac' : '#ab758c', 417, 207, 2, 2)
+  })
+
+  function gull(ctx, x, y, time, color) {
+    const lift = Math.round(Math.sin(time * 4.7) * 3)
+    shape(ctx, color, [[x - 12, y - lift - 2], [x - 6, y - lift - 2], [x, y], [x + 6, y - lift - 2],
+      [x + 13, y - lift - 1], [x + 7, y - lift], [x, y + 2], [x - 7, y - lift]], 1)
+  }
+
+  const harbor = scene('morning-harbor', '아침 항구', '#f3c49a', (ctx) => {
+    sky(ctx, ['#9ec5d2', '#aed0d9', '#bdd9db', '#d3e0d8', '#eae5d5', '#f4e5c8'], 196, 89)
+    disc(ctx, '#fff0c3', 448, 122, 37)
+    cloud(ctx, 154, 74, 85, '#f0e8d6', '#d3ddd6')
+    cloud(ctx, 526, 95, 53, '#efe8d9', '#cfdcd7')
+    shape(ctx, '#a0b1b4', [[0, 180], [64, 170], [133, 147], [173, 166], [234, 166], [301, 183], [408, 185],
+      [470, 164], [519, 169], [571, 146], [640, 160], [640, 209], [0, 209]])
+    water(ctx, 195, ['#91b9bd', '#83b4b8', '#73aab1', '#669ca7', '#64939f'], ['#afc9c3', '#8fc3bd', '#84a4ab', '#e2d7b6'], 617)
+    const rand = random(390)
+    for (let index = 0; index < 80; index += 1) {
+      const y = 202 + rand() * 158
+      box(ctx, index % 3 ? '#b4c9bb' : '#e9d8af', 444 + (rand() - 0.5) * (28 + (y - 194) * 0.72), y, 3 + rand() * 19, 1)
+    }
+    shape(ctx, '#7a8c8f', [[0, 235], [63, 229], [122, 217], [160, 228], [211, 214], [260, 223], [316, 211], [341, 219],
+      [327, 239], [242, 253], [114, 268], [0, 283]])
+    shape(ctx, '#a1ad9f', [[0, 235], [67, 227], [123, 214], [160, 226], [212, 212], [260, 221], [316, 208],
+      [341, 216], [314, 223], [210, 232], [133, 236], [0, 252]])
+    shape(ctx, '#ded5b6', [[272, 216], [278, 128], [300, 128], [308, 214]])
+    shape(ctx, '#f4ecd2', [[279, 214], [283, 128], [296, 128], [300, 216]])
+    shape(ctx, '#b5645f', [[276, 151], [302, 151], [304, 166], [275, 166]])
+    shape(ctx, '#bf7269', [[274, 180], [305, 180], [306, 195], [273, 195]])
+    box(ctx, '#64777b', 284, 200, 8, 16)
+    box(ctx, '#92685e', 272, 124, 35, 6)
+    box(ctx, '#a89a88', 279, 111, 22, 13)
+    box(ctx, '#fff0b7', 282, 113, 16, 9)
+    box(ctx, '#827a75', 289, 111, 2, 12)
+    shape(ctx, '#ad675f', [[275, 112], [289, 100], [305, 112]], 1)
+    box(ctx, '#846f68', 288, 96, 2, 5)
+    for (const [x, y, w] of [[103, 231, 60], [174, 224, 46], [222, 225, 32]]) {
+      box(ctx, '#d9c3a6', x, y - 24, w, 24)
+      shape(ctx, '#a37068', [[x - 4, y - 24], [x + w * 0.38, y - 39], [x + w + 4, y - 24]])
+      box(ctx, '#858b85', x + 6, y - 15, w * 0.26, 9)
+      box(ctx, '#728084', x + w * 0.66, y - 12, w * 0.17, 12)
+    }
+    shape(ctx, '#9b806b', [[0, 298], [148, 265], [184, 268], [0, 338]])
+    shape(ctx, '#b9a183', [[0, 296], [147, 263], [183, 266], [0, 326]])
+    for (let post = 0; post < 5; post += 1) {
+      const x = 18 + post * 31
+      const y = 310 - post * 10
+      box(ctx, '#796b60', x, y - 21, 5, 22)
+      box(ctx, '#d1b79a', x, y - 21, 2, 20)
+    }
+  }, (ctx, time) => {
+    sparkleWater(ctx, time, 242, 117, '#dce0c1', harborRipples)
+    const x = 398 + Math.sin(time / 10) * 59
+    const y = 279 + Math.sin(time * 2.1) * 2
+    shape(ctx, '#595f71', [[x - 53, y], [x + 44, y], [x + 52, y - 7], [x + 45, y + 11], [x - 39, y + 11]])
+    box(ctx, '#bd756e', x - 48, y + 3, 96, 5)
+    box(ctx, '#dfd1b8', x - 16, y - 23, 40, 23)
+    box(ctx, '#9d7971', x - 20, y - 27, 48, 4)
+    box(ctx, '#67848d', x - 9, y - 18, 10, 7)
+    box(ctx, '#67848d', x + 5, y - 18, 10, 7)
+    box(ctx, '#606e76', x - 19, y - 39, 2, 39)
+    box(ctx, '#b76865', x - 17, y - 38, 12, 5)
+    for (let wave = 0; wave < 5; wave += 1) box(ctx, '#b5d2c7', x - 54 - wave * 12, y + 10 + wave * 2, 21 - wave * 2, 1)
+    gull(ctx, 195 + time * 8, 124 + Math.sin(time) * 9, time, '#657f88')
+    gull(ctx, 225 + time * 9.4, 104 + Math.sin(time + 0.8) * 8, time + 0.3, '#687f89')
+    gull(ctx, 533 - time * 6, 141 + Math.sin(time + 1) * 7, time + 0.7, '#73858b')
+    gull(ctx, 500 - time * 5.3, 154 + Math.sin(time + 2) * 7, time + 0.1, '#73858b')
+  })
+
+  window.PixelScenes = { width, height, scenes: [city, lake, coast, rain, forest, snow, roof, blossoms, observatory, harbor] }
+})()

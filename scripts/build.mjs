@@ -100,6 +100,7 @@ function renderArticle(post, source) {
 }
 
 const common = {
+  SCENE_PLAYER: await readFile(new URL('src/scenery.html', root), 'utf8'),
   PROFILE_AVATAR: escape(safeUrl(github.profile.avatar)),
   PROFILE_BIO: escape(github.profile.bio || '백엔드 개발자 김동규의 프로젝트와 개발 기록.'),
   REPO_COUNT: String(github.repositories.length),
