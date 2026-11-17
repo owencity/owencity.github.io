@@ -1,6 +1,6 @@
 # 마지막 재고 한 개에서 CPU의 처리 순서까지
 
-검수 전 초안 · 작성 2026-11-14 · 수정 2026-11-17
+검수 전 초안 · 작성 2026-11-14 · 수정 2026-11-18
 
 ## 마지막 한 개는 누구에게 줄까
 
@@ -37,25 +37,44 @@ flowchart TD
 
 구체적인 예로 AMD의 **FPGA용 AXI Interconnect** 문서를 확인했다. FPGA는 필요한 디지털 회로를 구성할 수 있는 반도체이고, 여기서 살펴본 Interconnect는 요청을 연결하고 중재하는 부품이다. 이 문서는 Ryzen CPU의 내부 동작을 설명하는 자료는 아니다. [AMD의 FPGA 설명](https://docs.amd.com/r/2023.2-English/ug1393-vitis-application-acceleration/Working-with-Alveo-Accelerator-Cards)
 
-이 부품의 입력 연결부 두 개를 입력 0과 입력 1이라고 하자. 번호는 어느 연결부로 요청이 들어오는지를 구분한다. 먼저 도착한 고객에게 0번을 붙이는 방식과는 관계가 없다.
+여기서는 **입력 번호**와 **우선순위 설정값**을 먼저 구분해야 했다.
 
-두 입력이 모두 처리 가능한 요청을 내는 경우, 다음과 같은 선택 규칙이 있다. [AMD Transaction Arbitration](https://docs.amd.com/r/en-US/pg059-axi-interconnect/Transaction-Arbitration)
+- **입력 번호:** 어느 장치에서 요청이 들어오는 연결인지 구별하는 번호다. 그림에서는 요청이 들어오는 통로를 `입력 0`, `입력 1`로 표시했다.
+- **우선순위 설정값:** 각 입력에 따로 설정하는 값이다. 같은 입력 0에도 우선순위를 1로 설정할 수 있고, 2로 설정할 수도 있다.
 
-| 설정 | 선택 방식 |
-| --- | --- |
-| 두 입력의 우선순위가 모두 1 | 같은 우선순위이므로 번호가 낮은 입력 0을 먼저 선택한다. |
-| 두 입력의 우선순위가 모두 0 | round-robin으로 차례를 돌아가며 선택한다. |
+여기서 통로는 회로 사이의 신호 연결을 뜻한다. AMD 문서에서는 한 장치에 연결된 신호 묶음을 **슬롯(slot)**이라고 부른다. 고객이 먼저 도착한 순서대로 붙이는 번호가 아니다. [AMD 인터페이스 설명](https://docs.amd.com/r/en-US/pg059-axi-interconnect/Crossbar-Signal-Interface?contentId=rFhFimGP265HFnSmOuI56g)
 
 ```mermaid
-flowchart TB
-    fixed["우선순위 1 / 1<br/>낮은 번호 우선<br/>입력 0 → 0 → 0"]
-    rotation["우선순위 0 / 0<br/>round-robin<br/>입력 0 → 1 → 0"]
-    fixed ~~~ rotation
+flowchart TD
+    deviceA["요청을 보내는<br/>장치 A"] --> input0["입력 번호: 0<br/>우선순위 설정: 1"]
+    deviceB["요청을 보내는<br/>장치 B"] --> input1["입력 번호: 1<br/>우선순위 설정: 1"]
+    input0 --> arbiter["요청을 고르는 회로<br/>중재기"]
+    input1 --> arbiter
+    arbiter --> target["함께 접근하려는<br/>같은 대상 장치"]
 ```
 
-그림은 매번 두 입력 모두 선택 가능한 상태이고, 앞서 선택한 요청이 수락된 뒤 다음 선택을 하는 경우다. round-robin의 첫 차례는 입력 0으로 가정했다. 실제 부품은 처리 한도에 걸린 요청을 선택 대상에서 제외할 수 있으므로, 이 그림을 모든 상황의 처리 순서로 볼 수는 없다.
+**‘입력 0의 우선순위가 1’인 상황이다.** 입력 번호가 0이라고 우선순위도 0인 것은 아니다. A·B는 요청을 보내는 하드웨어 장치를 구별하기 위한 이름이다.
 
-여기서 번갈아 주는 것은 각 입력으로 들어온 요청이 처리될 기회다. 쇼핑몰이 이번 재고를 고객 A에게 주고 다음 재고를 고객 B에게 준다는 뜻은 아니다.
+두 요청이 같은 대상으로 향하고, 둘 다 선택 가능한 상태라고 가정하자. 우선순위를 모두 1로 설정했다면 다음 순서로 고른다.
+
+```mermaid
+flowchart TD
+    priority["① 우선순위 설정값 비교<br/>입력 0: 1 · 입력 1: 1"] --> tie["1 대 1로 동률<br/>최고 우선순위가 0보다 큼"]
+    tie --> number["② 입력 번호 비교<br/>0이 1보다 작음"]
+    number --> result["입력 0의 요청 선택"]
+```
+
+우선순위가 다른 경우와 모두 0인 경우도 나란히 비교하면 두 숫자의 역할이 분명해진다. 이 부품은 **큰 우선순위 값을 먼저** 선택한다. 같은 최고 우선순위가 0보다 크면 입력 번호가 작은 쪽을 고르고, 선택 가능한 요청들의 우선순위가 모두 0이면 round-robin을 사용한다. [AMD 중재 규칙](https://docs.amd.com/r/en-US/pg059-axi-interconnect/Transaction-Arbitration)
+
+| 입력 0의 우선순위 | 입력 1의 우선순위 | 선택 |
+| --- | --- | --- |
+| 1 | 1 | 우선순위가 동률이고 0보다 크므로, 번호가 작은 **입력 0**. |
+| 1 | 2 | 우선순위가 더 큰 **입력 1**. 입력 번호보다 우선순위를 먼저 비교한다. |
+| 0 | 0 | **round-robin**. 이전 차례에 따라 고른다. |
+
+우선순위를 모두 0으로 바꿔도 입력 번호는 그대로 0과 1이다. 두 입력에 계속 선택 가능한 요청이 있고, 선택된 요청이 수락된 뒤 다음 선택을 한다면 `입력 0 → 입력 1 → 입력 0`처럼 차례를 돌릴 수 있다. 여기서는 첫 선택을 입력 0으로 가정했다. 실제 부품은 처리 한도에 걸린 요청을 선택 대상에서 제외할 수 있다.
+
+여기서 돌아가는 차례는 각 입력으로 들어온 하드웨어 요청의 처리 기회다. 쇼핑몰이 이번 재고를 고객 A에게 주고 다음 재고를 고객 B에게 준다는 뜻은 아니다.
 
 이 사례로 **동시에 들어온 요청도 정해진 규칙과 내부 상태에 따라 하나를 선택할 수 있다**는 점을 이해했다. Intel Core·AMD Ryzen·Apple M 시리즈가 실제로 어느 요청을 먼저 선택하는지는 이 문서로 알 수 없다.
 
@@ -153,13 +172,14 @@ B가 다음에 잠금을 얻는 것은 이 표에서 가정한 진행 순서다.
 
 ## 참고 자료
 
-아래 자료의 본문은 2026-11-17에 확인했다. 발행·갱신일은 각 문서의 표기다.
+아래 자료의 본문은 2026-11-17에 확인했다. 입력 번호와 우선순위 설명에 사용한 AMD 인터페이스·중재 문서는 2026-11-18에 확인했다. 발행·갱신일은 각 문서의 표기다.
 
 | 자료 | 발행·갱신일 | 확인한 내용 |
 | --- | --- | --- |
 | [Linux getpid(2)](https://man7.org/linux/man-pages/man2/getpid.2.html) | 2026-02-08 | PID의 의미와 같은 프로세스의 스레드가 PID를 공유한다는 설명. |
 | [Oracle Processes and Threads](https://docs.oracle.com/javase/tutorial/essential/concurrency/procthread.html) | 미표기 · JDK 8 튜토리얼 | 프로세스·스레드와 여러 코어의 동시 실행. 현재 JDK 설정의 근거로 사용하지 않았다. |
 | [AMD의 FPGA 설명](https://docs.amd.com/r/2023.2-English/ug1393-vitis-application-acceleration/Working-with-Alveo-Accelerator-Cards) | 2023-12-13 · UG1393 2023.2 | FPGA의 논리 요소와 연결을 구성할 수 있다는 설명. |
+| [AMD 인터페이스 설명](https://docs.amd.com/r/en-US/pg059-axi-interconnect/Crossbar-Signal-Interface?contentId=rFhFimGP265HFnSmOuI56g) | 2025-12-19 · PG059 2.1 | 장치별 인터페이스 신호 묶음을 슬롯이라고 부른다는 설명. |
 | [AMD Transaction Arbitration](https://docs.amd.com/r/en-US/pg059-axi-interconnect/Transaction-Arbitration) | 2025-12-19 · PG059 2.1 | FPGA용 AXI Interconnect의 우선순위·입력 번호·round-robin. |
 | [Microsoft InterlockedCompareExchange](https://learn.microsoft.com/en-us/windows/win32/api/winnt/nf-winnt-interlockedcompareexchange) | 2022-05-24 | 비교·조건부 교환의 원자성. |
 | [Intel 캐시 일관성과 원자적 실행](https://www.intel.com/content/www/us/en/support/articles/000099741/processors/intel-xeon-processors.html) | 최종 검토 2026-07-08 | 캐시된 메모리의 잠긴 연산을 다룬 Xeon 관련 설명. |

@@ -5,7 +5,7 @@
     "summary": "마지막 재고 한 개에 두 구매 요청이 겹치면 누가 먼저 처리될까? DB 잠금에서 시작해 여러 CPU 코어가 같은 자원에 접근할 때의 처리 순서를 살펴봤습니다.",
     "category": "동시성",
     "date": "2026-11-14",
-    "updated": "2026-11-17",
+    "updated": "2026-11-18",
     "draft": true,
     "image": "assets/last-stock.svg",
     "source": "posts/last-stock-ordering.md",
