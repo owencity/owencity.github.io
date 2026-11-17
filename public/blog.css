@@ -46,12 +46,25 @@
 .blog-index .publication-empty strong { color: var(--text); font-size: 1.05rem; }
 .blog-index .publication-empty p { margin: 8px 0 0; }
 
-.article-page .content { max-width: 1050px; }
+.article-page .content { max-width: 1440px; }
 .article-page .back-link { margin-bottom: 14px; }
 .article-page .article { line-height: 1.87; }
 
 @media (max-width: 1269px) {
-  .article-page .content { max-width: 840px; }
+  .article-page .content { max-width: 1100px; }
+}
+@media (min-width: 1440px) {
+  .article-page .reading { grid-template-columns: minmax(0, 1fr) 236px; gap: 22px; }
+}
+@media (min-width: 601px) {
+  .article-page .article { font-size: 18px; }
+  .article-page .article h1 { font-size: clamp(2rem, 3.3vw, 3rem); }
+  .article-page .article h2 { font-size: 1.5em; }
+  .article-page .article h3 { font-size: 1.22em; }
+  .article-page .article h1 + p,
+  .article-page .article .article-meta { font-size: .875em; }
+  .article-page .article table { font-size: .9em; }
+  .article-page .article pre { font-size: .9em; }
 }
 @media (max-width: 600px) {
   .blog-index .post-link:has(> img) { grid-template-columns: minmax(0, 1fr); }
