@@ -2,6 +2,7 @@ import { readFile, writeFile, mkdir, cp, readdir, unlink } from 'node:fs/promise
 import { fileURLToPath } from 'node:url';
 import MarkdownIt from 'markdown-it';
 import { createRequire } from 'node:module';
+import { createHash } from 'node:crypto';
 
 const require = createRequire(import.meta.url);
 const root = new URL('../', import.meta.url);
@@ -99,7 +100,10 @@ function renderArticle(post, source) {
   return { content, toc: headings.map(heading => `<a class="toc-${heading.tag}" href="#${heading.id}">${escape(heading.label)}</a>`).join('') };
 }
 
+const pixelAssets = await Promise.all(['pixel-theme.css', 'pixel-scenes.js', 'scene-player.js'].map(name => readFile(new URL(`public/${name}`, root))));
+const pixelAssetVersion = createHash('sha256').update(Buffer.concat(pixelAssets)).digest('hex').slice(0, 12);
 const common = {
+  PIXEL_ASSET_VERSION: pixelAssetVersion,
   SCENE_PLAYER: await readFile(new URL('src/scenery.html', root), 'utf8'),
   PROFILE_AVATAR: escape(safeUrl(github.profile.avatar)),
   PROFILE_BIO: escape(github.profile.bio || '백엔드 개발자 김동규의 프로젝트와 개발 기록.'),
