@@ -1,0 +1,40 @@
+name: devdesk
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: devdesk
+      POSTGRES_USER: devdesk
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?Set DATABASE_PASSWORD in .env}
+    volumes:
+      - devdesk_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U devdesk -d devdesk']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  app:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      DATABASE_URL: jdbc:postgresql://db:5432/devdesk
+      DATABASE_USER: devdesk
+      BIND_ADDRESS: 0.0.0.0
+      OWNER_PASSWORD: ${OWNER_PASSWORD:?Set OWNER_PASSWORD in .env}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:?Set DATABASE_PASSWORD in .env}
+    ports:
+      - '127.0.0.1:18080:8080'
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+volumes:
+  devdesk_data:

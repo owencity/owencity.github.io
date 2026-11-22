@@ -1,0 +1,61 @@
+spring:
+  application:
+    name: devdesk
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/devdesk}
+    username: ${DATABASE_USER:devdesk}
+    password: ${DATABASE_PASSWORD:}
+    hikari:
+      maximum-pool-size: 4
+      connection-timeout: 5000
+  sql:
+    init:
+      mode: always
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+  mail:
+    host: ${SMTP_HOST:}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail.smtp.auth: ${SMTP_AUTH:true}
+      mail.smtp.starttls.enable: ${SMTP_STARTTLS:true}
+      mail.smtp.starttls.required: ${SMTP_STARTTLS:true}
+      mail.smtp.connectiontimeout: 10000
+      mail.smtp.timeout: 10000
+      mail.smtp.writetimeout: 10000
+server:
+  port: ${PORT:8080}
+  address: ${BIND_ADDRESS:127.0.0.1}
+  forward-headers-strategy: none
+  servlet:
+    session:
+      timeout: 12h
+      cookie:
+        http-only: true
+        same-site: strict
+        secure: ${COOKIE_SECURE:false}
+  error:
+    include-message: never
+    include-stacktrace: never
+devdesk:
+  owner:
+    username: ${OWNER_USERNAME:owner}
+    password: ${OWNER_PASSWORD:}
+  feed:
+    enabled: ${FEED_ENABLED:true}
+    interval-ms: ${FEED_INTERVAL_MS:900000}
+  google:
+    client-id: ${GOOGLE_CLIENT_ID:}
+    client-secret: ${GOOGLE_CLIENT_SECRET:}
+    refresh-token: ${GOOGLE_REFRESH_TOKEN:}
+    calendar-id: ${GOOGLE_CALENDAR_ID:primary}
+  notifications:
+    enabled: ${NOTIFICATIONS_ENABLED:false}
+    scheduled-enabled: ${DIGEST_SCHEDULED_ENABLED:false}
+    cron: ${DIGEST_CRON:0 0 8 * * *}
+    slack-webhook: ${SLACK_WEBHOOK_URL:}
+    email-from: ${EMAIL_FROM:}
+    email-to: ${EMAIL_TO:}

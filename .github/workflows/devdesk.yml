@@ -1,0 +1,27 @@
+name: DevDesk checks
+on:
+  push:
+    branches: ['devdesk/**']
+  pull_request:
+    paths: ['server/**', 'public/devdesk*', 'scripts/devdesk*', 'compose.devdesk.yml', '.github/workflows/devdesk.yml']
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      - run: npm ci --ignore-scripts
+      - run: npm test
+      - run: npm run build
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - run: mvn -B -f server/pom.xml verify
+      - name: Build deployable image with static dashboard
+        run: docker build -f server/Dockerfile -t devdesk:ci .
