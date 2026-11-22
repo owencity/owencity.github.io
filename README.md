@@ -76,3 +76,9 @@ Node.js 24에서 Markdown-it 15.0.3, Mermaid 11.17.2를 사용한다. 원래 티
 - [공개 활동 API](https://docs.github.com/en/rest/activity/events): 이벤트 조회 범위와 지연.
 - [GITHUB_TOKEN](https://docs.github.com/en/actions/concepts/security/github_token): 저장소에 발급되는 토큰의 범위.
 - [예약 실행](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule): 지연과 비활성 상태에서의 중단.
+
+
+## DevDesk
+
+뉴스와 오늘 일정을 모아 보는 개인 도구를 추가했다. [설치와 OCI 실행 안내](docs/devdesk.md)를 참고한다. 백엔드는 별도 실행하며, 개인 일정과 비밀값을 GitHub Pages에 게시하지 않는다.
+

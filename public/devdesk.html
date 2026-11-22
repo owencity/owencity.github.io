@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <meta name="referrer" content="no-referrer">
+  <title>DevDesk · 오늘의 개발</title>
+  <link rel="stylesheet" href="./devdesk.css">
+  <script type="module" src="./devdesk.js"></script>
+</head>
+<body>
+  <a class="skip" href="#main">본문 바로 가기</a>
+  <header class="topbar"><a class="brand" href="https://owencity.github.io"><span aria-hidden="true">▦</span> OWENCITY <span class="brand-sub">/ DevDesk</span></a><div class="header-actions"><span id="today-label"></span><button id="logout" hidden>로그아웃</button></div></header>
+  <main id="main">
+    <section class="intro"><p class="eyebrow">조금씩, 꾸준히.</p><h1>오늘의 개발을 시작해요.</h1><p>해야 할 일은 가까이, 새로운 소식은 가볍게.</p></section>
+    <p id="message" class="message" role="status" aria-live="polite">연결을 확인하고 있어요.</p>
+    <section id="connect" class="panel connect" hidden>
+      <h2>내 DevDesk로 연결하기</h2><p>뉴스 취향과 개인 일정은 나만 접근할 수 있는 서버에서 확인해요.</p>
+      <form id="connect-form"><label for="server-address">DevDesk 서버 주소</label><div class="input-row"><input id="server-address" type="url" placeholder="https://내-서버-주소" required autocomplete="url"><button class="primary" type="submit">서버 열기</button></div></form>
+      <p class="muted">처음 실행한다면 로컬 서버 주소는 http://localhost:8080이에요.</p>
+    </section>
+    <div id="dashboard" hidden>
+      <section class="overview" aria-label="오늘 일정">
+        <div class="panel focus"><p class="eyebrow">NEXT UP</p><h2 id="next-title">오늘 일정을 확인하고 있어요</h2><p id="next-detail"></p><a class="button light" href="https://calendar.google.com/calendar/u/0/r/day" target="_blank" rel="noopener noreferrer">Google Calendar 열기</a></div>
+        <div class="panel agenda"><div class="section-head"><h2>오늘 일정</h2><span class="tag">한국 시간</span></div><p id="calendar-state" class="muted"></p><ol id="events"></ol></div>
+      </section>
+      <section class="news-section" aria-labelledby="news-title">
+        <div class="section-head"><div><p class="eyebrow">DEVELOPER FEED</p><h2 id="news-title">새로운 소식, 나의 관심사</h2></div><button id="refresh">뉴스 수집</button></div>
+        <div class="toolbar"><div class="filters" role="group" aria-label="뉴스 보기"><button data-filter="all" aria-pressed="true">전체</button><button data-filter="recommended" aria-pressed="false">관심 소식</button><button data-filter="saved" aria-pressed="false">나중에 읽기</button><button data-filter="hidden" aria-pressed="false">숨긴 소식</button></div><label class="search"><span class="sr-only">뉴스 검색</span><input id="search" type="search" placeholder="제목이나 내용 검색"></label></div>
+        <div class="feed-info"><span id="feed-count"></span><span id="collected-at"></span></div>
+        <div id="news-list" aria-live="polite"></div>
+        <div id="empty" class="panel empty" hidden><h3>아직 표시할 소식이 없어요.</h3><p>뉴스를 수집하거나 다른 보기·검색어를 선택해 보세요.</p></div>
+      </section>
+      <section class="panel digest"><div class="section-head"><div><p class="eyebrow">DAILY BRIEF</p><h2>오늘의 요약</h2></div><button id="preview-digest">요약 미리보기</button></div><p class="muted">오늘 일정과 뉴스가 어떻게 전달될지 먼저 확인해요.</p><pre id="digest-text" hidden></pre><div id="digest-actions" hidden><p id="digest-state"></p><button data-channel="slack" disabled>Slack으로 보내기</button><button data-channel="email" disabled>이메일로 보내기</button></div></section>
+    </div>
+  </main>
+  <footer>DevDesk · 읽고, 계획하고, 시작하기. <a href="https://owencity.github.io/blog.html">개발 기록 보기</a></footer>
+</body>
+</html>

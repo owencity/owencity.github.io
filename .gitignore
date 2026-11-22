@@ -5,3 +5,17 @@ qa/
 .env
 .env.*
 !.env.example
+
+
+server/target/
+server/.local/
+server/src/main/resources/static/
+*credentials*.json
+*token*.json
+*backup*.sql
+
+server/data/
+data/*.mv.db
+data/*.trace.db
+__pycache__/
+
