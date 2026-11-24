@@ -62,7 +62,7 @@ public class NewsService {
             return new RefreshResult(0,jdbc.queryForObject("SELECT COUNT(*) FROM news_item",Long.class),current.lastCollectedAt());
         }
         try {
-            byte[] body=HttpFetch.send(HttpRequest.newBuilder(URI.create("https://news.hada.io/rss/news"))
+            byte[] body=HttpFetch.send(HttpRequest.newBuilder(URI.create("https://feeds.feedburner.com/geeknews-feed"))
                 .header("User-Agent","DevDesk/0.1 personal RSS reader").header("Accept","application/atom+xml, application/rss+xml, application/xml").GET().build(),4_194_304);
             int count=ingest(FeedParser.parse(body),Instant.now());
             Instant now=Instant.now();

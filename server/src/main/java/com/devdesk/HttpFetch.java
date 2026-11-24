@@ -19,12 +19,20 @@ public final class HttpFetch {
         .connectTimeout(Duration.ofSeconds(7)).followRedirects(HttpClient.Redirect.NEVER).build();
     private HttpFetch() {}
 
+    public record Response(int status, byte[] body) {}
+
     public static byte[] send(HttpRequest request, int maxBytes) throws IOException {
+        Response response = exchange(request, maxBytes);
+        if (response.status() / 100 != 2) throw new IOException("Upstream HTTP " + response.status());
+        return response.body();
+    }
+
+    /** Status-aware response for conditional upstream mutations. No automatic retries. */
+    public static Response exchange(HttpRequest request, int maxBytes) throws IOException {
         var future = CLIENT.sendAsync(request, info -> new LimitedBody(maxBytes));
         try {
             var response = future.orTimeout(25, TimeUnit.SECONDS).join();
-            if (response.statusCode() / 100 != 2) throw new IOException("Upstream HTTP " + response.statusCode());
-            return response.body();
+            return new Response(response.statusCode(), response.body());
         } catch (RuntimeException failure) {
             future.cancel(true);
             throw new IOException("Upstream request failed or exceeded deadline", failure);

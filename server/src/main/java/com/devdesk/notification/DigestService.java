@@ -60,14 +60,28 @@ public class DigestService {
     }
 
     public Channel channel(String name) {
-        boolean configured = switch (name) {
+        boolean configured = configured(name);
+        var rows = jdbc.query("SELECT status FROM digest_delivery WHERE digest_date = ? AND channel = ?",
+            (rs, n) -> rs.getString("status"), LocalDate.now(SEOUL), name);
+        return new Channel(name, configured, rows.isEmpty() ? "NOT_SENT" : rows.getFirst());
+    }
+
+    private boolean configured(String name) {
+        return switch (name) {
             case "slack" -> validSlackWebhook(slackWebhook);
             case "email" -> validEmail(emailFrom) && validEmail(emailTo) && mail.getIfAvailable() != null;
             default -> false;
         };
-        var rows = jdbc.query("SELECT status FROM digest_delivery WHERE digest_date = ? AND channel = ?",
-            (rs, n) -> rs.getString("status"), LocalDate.now(SEOUL), name);
-        return new Channel(name, configured, rows.isEmpty() ? "NOT_SENT" : rows.getFirst());
+    }
+
+    /** Availability check without composing a digest or touching delivery history. */
+    public boolean followupAvailable(String name) { return enabled && configured(name); }
+
+    /** Caller must persist its own unique claim before invoking this one-attempt transport. */
+    public String sendTaskFollowup(String name, String subject, String text) {
+        if (!followupAvailable(name)) return "FAILED";
+        var content = new DigestComposer.Content(subject, text);
+        return name.equals("slack") ? sendSlack(content) : sendEmail(content);
     }
 
     public Delivery send(String name) {

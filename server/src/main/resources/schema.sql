@@ -36,3 +36,60 @@ CREATE TABLE IF NOT EXISTS digest_delivery (
   detail VARCHAR(250),
   UNIQUE(digest_date, channel)
 );
+
+-- Additive v0.2 schema. Existing news and feedback remain untouched.
+CREATE TABLE IF NOT EXISTS news_summary (
+  news_id BIGINT PRIMARY KEY REFERENCES news_item(id) ON DELETE CASCADE,
+  status VARCHAR(30) NOT NULL,
+  claim_token VARCHAR(36),
+  source_scope VARCHAR(30),
+  source_url VARCHAR(4000),
+  source_content TEXT,
+  source_warning VARCHAR(1000),
+  input_hash VARCHAR(64),
+  result_json TEXT,
+  model VARCHAR(150),
+  prompt_version VARCHAR(80),
+  retry_model VARCHAR(150),
+  retry_model_day DATE,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  source_attempts INTEGER NOT NULL DEFAULT 0,
+  next_attempt_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  generated_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  error VARCHAR(500),
+  CONSTRAINT summary_status_valid CHECK (status IN ('QUEUED','PROCESSING','SUCCEEDED','FAILED'))
+);
+CREATE INDEX IF NOT EXISTS summary_pending_idx ON news_summary(status,next_attempt_at);
+CREATE TABLE IF NOT EXISTS summary_daily_budget (
+  budget_date DATE PRIMARY KEY,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  blocked_until TIMESTAMP WITH TIME ZONE,
+  model_accounted BOOLEAN NOT NULL DEFAULT FALSE,
+  legacy_attempts INTEGER NOT NULL DEFAULT 0
+);
+-- Existing v0.2 installations retain their rows and counters. Attribution happens once under a row lock.
+ALTER TABLE news_summary ADD COLUMN IF NOT EXISTS retry_model VARCHAR(150);
+ALTER TABLE news_summary ADD COLUMN IF NOT EXISTS retry_model_day DATE;
+ALTER TABLE summary_daily_budget ADD COLUMN IF NOT EXISTS model_accounted BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE summary_daily_budget ADD COLUMN IF NOT EXISTS legacy_attempts INTEGER NOT NULL DEFAULT 0;
+CREATE TABLE IF NOT EXISTS summary_model_daily_budget (
+  budget_date DATE NOT NULL,
+  model VARCHAR(150) NOT NULL,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  blocked_until TIMESTAMP WITH TIME ZONE,
+  PRIMARY KEY (budget_date, model)
+);
+
+-- One send attempt for each observed task-plan end and channel. Uncertain outcomes are never retried.
+CREATE TABLE IF NOT EXISTS task_followup_delivery (
+  event_id VARCHAR(1024) NOT NULL,
+  event_end TIMESTAMP WITH TIME ZONE NOT NULL,
+  channel VARCHAR(10) NOT NULL,
+  task_plan_key VARCHAR(64) NOT NULL,
+  status VARCHAR(20) NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  PRIMARY KEY (event_id, event_end, channel)
+);

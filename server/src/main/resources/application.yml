@@ -41,6 +41,22 @@ server:
     include-message: never
     include-stacktrace: never
 devdesk:
+  summary:
+    enabled: ${AI_SUMMARY_ENABLED:false}
+    api-key: ${GEMINI_API_KEY:}
+    model: ${GEMINI_MODEL:}
+    fallback-models: ${GEMINI_FALLBACK_MODELS:}
+    model-daily-limit: ${AI_SUMMARY_MODEL_DAILY_LIMIT:500}
+    daily-limit: ${AI_SUMMARY_DAILY_LIMIT:20}
+    max-attempts: ${AI_SUMMARY_MAX_ATTEMPTS:3}
+    batch-size: ${AI_SUMMARY_BATCH_SIZE:1}
+    interval-ms: ${AI_SUMMARY_INTERVAL_MS:60000}
+    max-input-chars: ${AI_SUMMARY_MAX_INPUT_CHARS:120000}
+    max-output-tokens: ${AI_SUMMARY_MAX_OUTPUT_TOKENS:12000}
+    request-timeout-seconds: ${AI_SUMMARY_TIMEOUT_SECONDS:90}
+    source-max-bytes: 2097152
+    source-max-chars: ${AI_SUMMARY_MAX_INPUT_CHARS:120000}
+    source-min-chars: 200
   owner:
     username: ${OWNER_USERNAME:owner}
     password: ${OWNER_PASSWORD:}
@@ -51,7 +67,9 @@ devdesk:
     client-id: ${GOOGLE_CLIENT_ID:}
     client-secret: ${GOOGLE_CLIENT_SECRET:}
     refresh-token: ${GOOGLE_REFRESH_TOKEN:}
+    tasks-refresh-token: ${GOOGLE_TASKS_REFRESH_TOKEN:}
     calendar-id: ${GOOGLE_CALENDAR_ID:primary}
+    write-enabled: ${GOOGLE_CALENDAR_WRITE_ENABLED:false}
   notifications:
     enabled: ${NOTIFICATIONS_ENABLED:false}
     scheduled-enabled: ${DIGEST_SCHEDULED_ENABLED:false}
@@ -59,3 +77,5 @@ devdesk:
     slack-webhook: ${SLACK_WEBHOOK_URL:}
     email-from: ${EMAIL_FROM:}
     email-to: ${EMAIL_TO:}
+  tasks:
+    followup-channel: ${TASK_FOLLOWUP_CHANNEL:}
